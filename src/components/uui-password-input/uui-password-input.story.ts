@@ -9,6 +9,7 @@ export default {
 export const Overview = () =>
   html`
   <uui-password-input 
+    label = "Password"
    .toggleText=${{ showText: 'Vis password', hideText: 'Skjul password' }} 
     @password-toggle=${(e: CustomEvent) =>
       console.log(
