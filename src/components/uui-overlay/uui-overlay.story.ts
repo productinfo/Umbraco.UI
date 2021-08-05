@@ -1,4 +1,5 @@
 import { html } from 'lit-html';
+import { state } from 'lit/decorators';
 import '.';
 
 export default {
@@ -6,32 +7,48 @@ export default {
   component: 'uui-overlay',
 };
 
-export const Default = () => html`
-  <div style="width: 200px">
-    The overlay should go over me <br />
-    Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
-    dlkad d asd adw ahs d
-  </div>
-  <div style="width: 200px">
-    The overlay should go over me <br />
-    Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
-    dlkad d asd adw ahs d
-  </div>
-  <div style="margin-left: 200px">
-    <div style="border: 1px solid black; height: 50px">
-      I will activate the dropdown
+export const Default = () => {
+  const element = html`
+    <div style="width: 200px">
+      The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d
     </div>
-    <uui-overlay>
-      <div
-        style="padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #9a9affe6; width: 100px; height: 100px"
-      >
-        I am a dropdown
-      </div>
-    </uui-overlay>
-  </div>
-  <div style="width: 200px">
-    The overlay should go over me <br />
-    Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
-    dlkad d asd adw ahs d
-  </div>
-`;
+    <div style="margin-left: 1000px">
+      <dropdown-test></dropdown-test>
+    </div>
+    <div style="width: 3000px; background: gray">
+      The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d
+    </div>
+    <div style="width: 200px">
+      The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d The overlay should go over me <br />
+      Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
+      dlkad d asd adw ahs d
+    </div>
+  `;
+  return element;
+};
