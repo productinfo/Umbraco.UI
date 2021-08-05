@@ -27,7 +27,7 @@ export const Default = () => {
     <div style="margin-left: 1000px">
       <dropdown-test></dropdown-test>
     </div>
-    <div style="width: 3000px; background: gray">
+    <div style="width: 3000px">
       The overlay should go over me <br />
       Lorem ipsum jasjdkjd jasduwj jsdawlasd as dasdj asd asdjlsakdla jdlkad lsa
       dlkad d asd adw ahs d

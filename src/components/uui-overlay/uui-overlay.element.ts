@@ -2,7 +2,15 @@ import { property, query, state } from 'lit/decorators';
 import { LitElement, html, css } from 'lit';
 import { resolveTxt } from 'dns';
 
-export type OverlayPosition = 'topLeft' | 'topCenter' | 'topRight';
+export type OverlayPosition =
+  | 'topLeft'
+  | 'topCenter'
+  | 'topRight'
+  | 'botLeft'
+  | 'botCenter'
+  | 'botRight'
+  | 'left'
+  | 'right';
 
 /**
  *  @element uui-avatar
@@ -54,9 +62,11 @@ export class UUIOverlayElement extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    document.addEventListener('mousemove', e => this.onMouseMove(e));
     document.addEventListener('scroll', () => this.updateOverlay());
   }
   disconnectedCallback() {
+    document.removeEventListener('mousemove', e => this.onMouseMove(e));
     document.removeEventListener('scroll', () => this.updateOverlay());
     super.disconnectedCallback();
   }
@@ -75,6 +85,42 @@ export class UUIOverlayElement extends LitElement {
     setTimeout(() => this.updateOverlay(), 0);
   }
 
+  onMouseMove(e: MouseEvent) {
+    const conRect = this.shadowRoot!.querySelector(
+      '.container'
+    )?.getBoundingClientRect()!;
+    const parentRect = this.parent!.getBoundingClientRect()!;
+    const rootElement = this.rootElement!;
+
+    if (this.open) {
+      const posY =
+        e.clientY - parentRect.y - parentRect.height - conRect.height / 2;
+      const posX = e.clientX - parentRect.x - conRect.width / 2;
+      const posYClamp = Math.max(
+        -conRect.height - parentRect.height,
+        Math.min(posY, 0)
+      );
+      const posXClamp = Math.max(
+        -conRect.width,
+        Math.min(posX, parentRect.width)
+      );
+
+      let posYFinal = posY;
+      if (-posY > parentRect.height / 2) {
+        posYFinal =
+          posX < -conRect.width || posX > parentRect.width
+            ? posYClamp
+            : -parentRect.height - conRect.height;
+      } else {
+        posYFinal =
+          posX < -conRect.width || posX > parentRect.width ? posYClamp : 0;
+      }
+
+      rootElement.style.top = `${posYFinal}px`;
+      rootElement.style.left = `${posXClamp}px`;
+    }
+  }
+
   updateOverlay(count = 1) {
     const conRect = this.shadowRoot!.querySelector(
       '.container'
@@ -88,49 +134,51 @@ export class UUIOverlayElement extends LitElement {
       conRect !== (null || undefined) &&
       rootElement !== (null || undefined)
     ) {
-      // Should be a property that will be assigned in the parent component.
-      const wantToGoTop = false;
-      const wantToGoRight = false;
-
-      //This is the place that the overlay can actually fit.
-      let canGoTop = wantToGoTop;
-      let canGoRight = wantToGoRight;
-
-      if (wantToGoTop) {
-        canGoTop = parentRect.y - conRect.height > 0;
-      } else {
-        canGoTop =
-          parentRect.y + parentRect.height + conRect.height >
-          window.innerHeight;
-      }
-
-      if (wantToGoRight) {
-        canGoRight =
-          parentRect.x + parentRect.width + conRect.width < window.innerWidth;
-      } else {
-        canGoRight = parentRect.x - conRect.width < 0;
-      }
-
-      // Vertical calculations
-      const vertStartPos = canGoTop ? parentRect.height + conRect.height : 0;
-      const botOffset =
-        window.innerHeight - parentRect.y - conRect.height - parentRect.height;
-      const topOffset = parentRect.y + parentRect.height;
-
-      rootElement.style.bottom = `${Math.max(
-        -botOffset,
-        Math.min(vertStartPos, topOffset)
-      )}px`;
-
-      // Horizontal calculations
-      const horStarPos = canGoRight ? parentRect.width : -conRect.width;
-      const leftOffset = window.innerWidth - parentRect.x - conRect.width;
-      const rightOffset = parentRect.x;
-
-      rootElement.style.left = `${Math.max(
-        -rightOffset,
-        Math.min(leftOffset, horStarPos)
-      )}px`;
+      // const overlayPosition: OverlayPosition = "left"
+      // switch (overlayPosition) {
+      //   case "left":
+      //     rootElement.style.top = `${-parentRect.height}px`;
+      //     rootElement.style.left = `${-conRect.width}px`;
+      //     break;
+      //   default:
+      //     break;
+      // }
+      // // Should be a property that will be assigned in the parent component.
+      // const wantToGoTop = false;
+      // const wantToGoRight = false;
+      // //This is the place that the overlay can actually fit.
+      // let canGoTop = wantToGoTop;
+      // let canGoRight = wantToGoRight;
+      // if (wantToGoTop) {
+      //   canGoTop = parentRect.y - conRect.height > 0;
+      // } else {
+      //   canGoTop =
+      //     parentRect.y + parentRect.height + conRect.height >
+      //     window.innerHeight;
+      // }
+      // if (wantToGoRight) {
+      //   canGoRight =
+      //     parentRect.x + parentRect.width + conRect.width < window.innerWidth;
+      // } else {
+      //   canGoRight = parentRect.x - conRect.width < 0;
+      // }
+      // // Vertical calculations
+      // const vertStartPos = canGoTop ? parentRect.height + conRect.height : 0;
+      // const botOffset =
+      //   window.innerHeight - parentRect.y - conRect.height - parentRect.height;
+      // const topOffset = parentRect.y + parentRect.height;
+      // rootElement.style.bottom = `${Math.max(
+      //   -botOffset,
+      //   Math.min(vertStartPos, topOffset)
+      // )}px`;
+      // // Horizontal calculations
+      // const horStarPos = canGoRight ? parentRect.width : -conRect.width;
+      // const leftOffset = window.innerWidth - parentRect.x - conRect.width;
+      // const rightOffset = parentRect.x;
+      // rootElement.style.left = `${Math.max(
+      //   -rightOffset,
+      //   Math.min(leftOffset, horStarPos)
+      // )}px`;
     }
 
     rootElement.style.opacity = '1';

@@ -7,10 +7,12 @@ import { LitElement, html, css } from 'lit';
 export class DropdownTest extends LitElement {
   static styles = [
     css`
+      .container {
+        width: 200px;
+      }
       .dropdown {
         display: block;
         border: 1px solid black;
-        width: 200px;
         height: 50px;
         padding: 12px;
       }
@@ -21,13 +23,13 @@ export class DropdownTest extends LitElement {
 
   render() {
     return html`
-      <div>
+      <div class="container">
         <div class="dropdown" @click=${() => (this.open = !this.open)}>
-          I WIL OPEN THE DROPDOWN
+          I WILL OPEN THE DROPDOWN
         </div>
         <uui-overlay .open=${this.open}>
           <div
-            style="padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff; width: 124px; height: 80px"
+            style="padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
           >
             I am a dropdown
             <button>jeg er en knap</button>
