@@ -1,6 +1,7 @@
 import { property, query, state } from 'lit/decorators';
 import { LitElement, html, css } from 'lit';
 import { resolveTxt } from 'dns';
+import { timeStamp } from 'console';
 
 export type OverlayPosition =
   | 'topLeft'
@@ -20,7 +21,7 @@ export class UUIOverlayElement extends LitElement {
   static styles = [
     css`
       :host {
-        position: relative;
+        position: fixed;
       }
       .container {
         position: absolute;
@@ -63,11 +64,11 @@ export class UUIOverlayElement extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     document.addEventListener('mousemove', e => this.onMouseMove(e));
-    document.addEventListener('scroll', () => this.updateOverlay());
+    document.addEventListener('scroll', () => this.onMouseMove());
   }
   disconnectedCallback() {
     document.removeEventListener('mousemove', e => this.onMouseMove(e));
-    document.removeEventListener('scroll', () => this.updateOverlay());
+    document.removeEventListener('scroll', () => this.onMouseMove());
     super.disconnectedCallback();
   }
 
@@ -85,40 +86,125 @@ export class UUIOverlayElement extends LitElement {
     setTimeout(() => this.updateOverlay(), 0);
   }
 
-  onMouseMove(e: MouseEvent) {
+  mathClamp(value: number, min: number, max: number) {
+    if (value < min) {
+      return min;
+    } else if (value > max) {
+      return max;
+    }
+
+    return value;
+  }
+
+  onMouseMove(e?: MouseEvent) {
     const conRect = this.shadowRoot!.querySelector(
       '.container'
     )?.getBoundingClientRect()!;
     const parentRect = this.parent!.getBoundingClientRect()!;
     const rootElement = this.rootElement!;
 
+    rootElement.style.opacity = '1';
+
     if (this.open) {
-      const posY =
-        e.clientY - parentRect.y - parentRect.height - conRect.height / 2;
-      const posX = e.clientX - parentRect.x - conRect.width / 2;
-      const posYClamp = Math.max(
-        -conRect.height - parentRect.height,
-        Math.min(posY, 0)
+      // const posYInput = e.y;
+      // const posXInput = e.x;
+      const posXFlip =
+        parentRect.x + parentRect.width / 2 - window.innerWidth / 2 < 0;
+      const posYFlip =
+        parentRect.y + parentRect.height / 2 - window.innerHeight / 2 < 0;
+      const posXInput = posXFlip ? window.innerWidth : 0;
+      const posYInput = posYFlip ? window.innerHeight : 0;
+      const posY = this.mathClamp(
+        posYInput,
+        parentRect.y - conRect.height,
+        parentRect.y + parentRect.height
       );
-      const posXClamp = Math.max(
-        -conRect.width,
-        Math.min(posX, parentRect.width)
+      const posX = this.mathClamp(
+        posXInput,
+        parentRect.x - conRect.width,
+        parentRect.x + parentRect.width
       );
 
-      let posYFinal = posY;
-      if (-posY > parentRect.height / 2) {
-        posYFinal =
-          posX < -conRect.width || posX > parentRect.width
-            ? posYClamp
-            : -parentRect.height - conRect.height;
-      } else {
-        posYFinal =
-          posX < -conRect.width || posX > parentRect.width ? posYClamp : 0;
-      }
+      const posYClamp = this.mathClamp(
+        posY,
+        0,
+        window.innerHeight - conRect.height
+      );
+      const posXClamp = this.mathClamp(
+        posX,
+        0,
+        window.innerWidth - conRect.width
+      );
 
-      rootElement.style.top = `${posYFinal}px`;
+      // TRY REVERSE CLAMP
+      // const reverseClampY = this.mathClamp(posYInput, parentRect.y + parentRect.height, parentRect.y - conRect.height);
+
+      rootElement.style.top = `${posYClamp}px`;
       rootElement.style.left = `${posXClamp}px`;
     }
+
+    // if(this.open) {
+    //   // const posY = Math.max(0,Math.min(window.innerHeight, parentRect.y - conRect.height));
+    //   const posXFlip = (parentRect.x + parentRect.width / 2 - window.innerWidth / 2) < 0;
+
+    //   //  const posY = 0;
+    //   //  const posX = 0;
+
+    //   const posX = posXFlip ? window.innerWidth : 0;
+    //   const posY = window.innerHeight;
+
+    //   console.log(posX);
+
+    //   const testY = posY - conRect.height;
+    //   const testYOffset = parentRect.y + parentRect.height - testY;
+    //   const testYBool = testYOffset > 0 && testYOffset < conRect.height * 2 + parentRect.height;
+    //   const posXLeftClamp = Math.min(Math.max(0, testYBool ? parentRect.x - conRect.width : parentRect.x), window.innerWidth);
+    //   const posXRightClamp = Math.max(0 ,parentRect.x + parentRect.width - (testYBool ? 0 : conRect.width ));
+
+    //   const posXClamp = posX < parentRect.x + parentRect.width / 2 ? posXLeftClamp : posXRightClamp;
+
+    //   const testX = posX;
+    //   const testXOffset = -(parentRect.x - conRect.width - testX);
+    //   const testXBool = testXOffset > 0 && testXOffset < conRect.width * 2 + parentRect.width;
+    //   const posYTopClamp = Math.min(Math.max(0 , parentRect.y -  conRect.height), window.innerHeight - conRect.height);
+    //   const posYBottomClamp = Math.max(0, Math.min(parentRect.y + parentRect.height, window.innerHeight - conRect.height));
+    //   // const posYBottomClampTest = Math.max(0, Math.min(testYBool ? Math.min(posY, parentRect.y + parentRect.height) : parentRect.y + parentRect.height, window.innerHeight - conRect.height));
+    //   const posYClamp = posY < parentRect.y + parentRect.height / 2 ? posYTopClamp : posYBottomClamp;
+    //   const posYClampFinal = testYBool ? Math.min(posY, parentRect.y + parentRect.height) : posYClamp;
+
+    //   rootElement.style.top = `${posYClampFinal}px`;
+    //   rootElement.style.left = `${posXClamp}px`;
+    // }
+
+    // if (this.open) {
+    //   const posY = -parentRect.y + parentRect.height - conRect.height;
+    //   const posX = -parentRect.x;
+
+    //   console.log(posY, -parentRect.y, parentRect.height);
+
+    //   const posYClamp = Math.max(
+    //     -conRect.height - parentRect.height,
+    //     Math.min(posY, 0)
+    //   );
+    //   const posXClamp = Math.max(
+    //     -conRect.width,
+    //     Math.min(posX, parentRect.width)
+    //   );
+
+    //   let posYFinal = posY;
+    //   if (-posY > parentRect.height) {
+    //     posYFinal =
+    //       posX < -conRect.width || posX > parentRect.width
+    //         ? posYClamp
+    //         : -parentRect.height - conRect.height;
+    //   } else {
+    //     posYFinal =
+    //       posX < -conRect.width || posX > parentRect.width ? posYClamp : 0;
+    //   }
+
+    //   rootElement.style.top = `${posYFinal}px`;
+    //   rootElement.style.left = `${posXClamp}px`;
+    // }
   }
 
   updateOverlay(count = 1) {
