@@ -108,39 +108,83 @@ export class UUIOverlayElement extends LitElement {
     if (this.open) {
       // const posYInput = e.y;
       // const posXInput = e.x;
-      const posXFlip =
-        parentRect.x + parentRect.width / 2 - window.innerWidth / 2 < 0;
-      const posYFlip =
-        parentRect.y + parentRect.height / 2 - window.innerHeight / 2 < 0;
+
+      // For Convience and readability
+      const halfWindowX = window.innerWidth / 2;
+      const halfWindowY = window.innerHeight / 2;
+      const halfConX = conRect.width / 2;
+      const halfConY = conRect.height / 2;
+      const halfParentX = parentRect.width / 2;
+      const halfParentY = parentRect.height / 2;
+
+      const centerToParentX = halfWindowX - parentRect.x;
+      const centerToParentY = halfWindowY - parentRect.y;
+
+      //Is the center of the screen within the X or Y axis of the component?
+      const isInCenterX =
+        centerToParentX > 0 - halfConX &&
+        centerToParentX < parentRect.width + halfConX;
+      const isInCenterY =
+        centerToParentY > 0 - halfConY &&
+        centerToParentY < parentRect.height + halfConY;
+
+      //Detect which side of the center the parent element is on, on both axes.
+      const posXFlip = parentRect.x + halfParentX - halfWindowX < 0;
+      const posYFlip = parentRect.y + halfParentY - halfWindowY < 0;
+
+      //Flip the target left/right and top/down based on the position of the parent element relative to the screen center
       const posXInput = posXFlip ? window.innerWidth : 0;
       const posYInput = posYFlip ? window.innerHeight : 0;
-      const posY = this.mathClamp(
-        posYInput,
-        parentRect.y - conRect.height,
-        parentRect.y + parentRect.height
-      );
+
+      //Clamp the overlay container to the edges of the parent element.
       const posX = this.mathClamp(
         posXInput,
         parentRect.x - conRect.width,
         parentRect.x + parentRect.width
       );
-
-      const posYClamp = this.mathClamp(
-        posY,
-        0,
-        window.innerHeight - conRect.height
+      const posY = this.mathClamp(
+        posYInput,
+        parentRect.y - conRect.height,
+        parentRect.y + parentRect.height
       );
+
+      //Clamp the overlay to the screen so that it "always" stays inside:
       const posXClamp = this.mathClamp(
         posX,
         0,
         window.innerWidth - conRect.width
       );
+      const posYClamp = this.mathClamp(
+        posY,
+        0,
+        window.innerHeight - conRect.height
+      );
+
+      //Make the overlay container glide along the edges of the parent.
+      const posXFinal = isInCenterX
+        ? centerToParentX + parentRect.x - halfConX
+        : posXClamp;
+      const posYFinal = isInCenterY
+        ? centerToParentY + parentRect.y - halfConY
+        : posYClamp;
+
+      //Make sure the overlay container doesn't overlap the parent and that it stays on screen.
+      const posYActualFinal = isInCenterX
+        ? this.mathClamp(
+            centerToParentY - halfParentY < 0
+              ? parentRect.y - conRect.height
+              : parentRect.y + parentRect.height,
+            0,
+            window.innerHeight - conRect.height
+          )
+        : posYFinal;
+
+      //apply the positions as styling
+      rootElement.style.top = `${posYActualFinal}px`;
+      rootElement.style.left = `${posXFinal}px`;
 
       // TRY REVERSE CLAMP
       // const reverseClampY = this.mathClamp(posYInput, parentRect.y + parentRect.height, parentRect.y - conRect.height);
-
-      rootElement.style.top = `${posYClamp}px`;
-      rootElement.style.left = `${posXClamp}px`;
     }
 
     // if(this.open) {

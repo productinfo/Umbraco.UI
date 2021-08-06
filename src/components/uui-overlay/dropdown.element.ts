@@ -29,7 +29,7 @@ export class DropdownTest extends LitElement {
         </div>
         <uui-overlay .open=${this.open}>
           <div
-            style="padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
+            style="height: 200px; width: 100px; padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
           >
             I am a dropdown
             <button>jeg er en knap</button>
