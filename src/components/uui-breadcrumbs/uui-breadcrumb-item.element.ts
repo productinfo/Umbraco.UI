@@ -56,6 +56,8 @@ export class UUIBreadcrumbItemElement extends LitElement {
     this.setAttribute('role', 'listitem');
   }
 
+  // TODO: Add label features.
+
   @property()
   href = '#';
 
