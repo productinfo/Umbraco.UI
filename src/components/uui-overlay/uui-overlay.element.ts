@@ -3,11 +3,17 @@ import { LitElement, html, css } from 'lit';
 
 export type OverlayPosition =
   | 'topLeft'
+  | 'topCenter'
   | 'topRight'
   | 'botLeft'
+  | 'botCenter'
   | 'botRight'
-  | 'left'
-  | 'right';
+  | 'leftTop'
+  | 'leftCenter'
+  | 'leftBot'
+  | 'rightTop'
+  | 'rightCenter'
+  | 'rightBot';
 
 /**
  *  @element uui-avatar
@@ -39,12 +45,20 @@ export class UUIOverlayElement extends LitElement {
   ];
 
   @state() _open = false;
+  @state() _overlayPos: OverlayPosition = 'botLeft';
   @state() rootElement?: HTMLElement;
   @state() top = false;
-  @state() useAutoPlacement = false;
 
+  @property({ type: Boolean }) useAutoPlacement = false;
   @property({ type: Object }) parent?: Element;
-  @property({ type: String }) overlayPos: OverlayPosition = 'botLeft';
+  @property({ type: String })
+  get overlayPos() {
+    return this._overlayPos;
+  }
+  set overlayPos(newValue) {
+    this._overlayPos = newValue;
+    this.updateOverlay();
+  }
 
   @property({ type: Boolean })
   get open() {
@@ -80,9 +94,8 @@ export class UUIOverlayElement extends LitElement {
       setTimeout(() => {
         this.updateOverlay();
         this.rootElement!.style.opacity = '1';
+        document.addEventListener('scroll', () => this.updateOverlay());
       }, 0);
-
-      document.addEventListener('scroll', () => this.updateOverlay());
     }
   }
 
@@ -91,14 +104,18 @@ export class UUIOverlayElement extends LitElement {
   }
 
   updateOverlay() {
+    if (!this.shadowRoot) {
+      return;
+    }
+
+    // TODO: These 3 should propably be cashed.
     const conRect = this.shadowRoot!.querySelector(
       '.container'
     )?.getBoundingClientRect()!;
     const parentRect = this.parent!.getBoundingClientRect()!;
     const rootElement = this.rootElement!;
 
-    this.detectIfOutsideScreen(conRect, parentRect);
-
+    this.useAutoPlacement = this.detectIfOutsideScreen(conRect, parentRect);
     if (this.useAutoPlacement) {
       this.autoPlacement(conRect, parentRect, rootElement);
     } else {
@@ -106,30 +123,74 @@ export class UUIOverlayElement extends LitElement {
     }
   }
 
-  detectIfOutsideScreen(conRect: DOMRect, parentRect: DOMRect) {
+  detectIfOutsideScreen(conRect: DOMRect, parentRect: DOMRect): boolean {
     let isOutsideScreen = false;
 
-    if (this.overlayPos === 'left' || this.overlayPos === 'right') {
-      const outTop = parentRect.y < 0;
-      const outBot = window.innerHeight - (parentRect.y + conRect.height) < 0;
-      let outRight = false;
-      let outLeft = false;
+    if (
+      this.overlayPos === 'leftTop' ||
+      this.overlayPos === 'leftCenter' ||
+      this.overlayPos === 'leftBot'
+    ) {
+      let outTop = false;
+      let outBot = false;
+      const outRight = window.innerWidth - parentRect.x < 0;
+      const outLeft = parentRect.x - conRect.width < 0;
 
-      if (this.overlayPos === 'left') {
-        outRight = window.innerWidth - parentRect.x < 0;
-        outLeft = parentRect.x - conRect.width < 0;
+      if (this.overlayPos === 'leftTop') {
+        outTop = parentRect.y < 0;
+        outBot = window.innerHeight - (parentRect.y + conRect.height) < 0;
       }
-      if (this.overlayPos === 'right') {
-        outRight =
-          window.innerWidth -
-            (parentRect.x + parentRect.width + conRect.width) <
+      if (this.overlayPos === 'leftCenter') {
+        outTop =
+          parentRect.y + (parentRect.height / 2 - conRect.height / 2) < 0;
+        outBot =
+          window.innerHeight -
+            (parentRect.y + (parentRect.height / 2 + conRect.height / 2)) <
           0;
-        outLeft = parentRect.x + parentRect.width < 0;
+      }
+      if (this.overlayPos === 'leftBot') {
+        outTop = parentRect.y + (parentRect.height - conRect.height) < 0;
+        outBot = window.innerHeight - (parentRect.y + parentRect.height) < 0;
       }
       isOutsideScreen = outRight || outLeft || outTop || outBot;
     }
 
-    if (this.overlayPos === 'topLeft' || this.overlayPos === 'topRight') {
+    if (
+      this.overlayPos === 'rightTop' ||
+      this.overlayPos === 'rightCenter' ||
+      this.overlayPos === 'rightBot'
+    ) {
+      let outTop = false;
+      let outBot = false;
+      const outRight =
+        window.innerWidth - (parentRect.x + parentRect.width + conRect.width) <
+        0;
+      const outLeft = parentRect.x + parentRect.width < 0;
+
+      if (this.overlayPos === 'rightTop') {
+        outTop = parentRect.y < 0;
+        outBot = window.innerHeight - (parentRect.y + conRect.height) < 0;
+      }
+      if (this.overlayPos === 'rightCenter') {
+        outTop =
+          parentRect.y + (parentRect.height / 2 - conRect.height / 2) < 0;
+        outBot =
+          window.innerHeight -
+            (parentRect.y + (parentRect.height / 2 + conRect.height / 2)) <
+          0;
+      }
+      if (this.overlayPos === 'rightBot') {
+        outTop = parentRect.y + (parentRect.height - conRect.height) < 0;
+        outBot = window.innerHeight - (parentRect.y + parentRect.height) < 0;
+      }
+      isOutsideScreen = outRight || outLeft || outTop || outBot;
+    }
+
+    if (
+      this.overlayPos === 'topLeft' ||
+      this.overlayPos === 'topCenter' ||
+      this.overlayPos === 'topRight'
+    ) {
       const outTop = parentRect.y - conRect.height < 0;
       const outBot = window.innerHeight - parentRect.y < 0;
       let outRight = false;
@@ -139,6 +200,13 @@ export class UUIOverlayElement extends LitElement {
         outRight = window.innerWidth - (parentRect.x + conRect.width) < 0;
         outLeft = parentRect.x < 0;
       }
+      if (this.overlayPos === 'topCenter') {
+        outRight =
+          window.innerWidth -
+            (parentRect.x + (parentRect.width / 2 + conRect.width / 2)) <
+          0;
+        outLeft = parentRect.x + (parentRect.width / 2 - conRect.width / 2) < 0;
+      }
       if (this.overlayPos === 'topRight') {
         outRight = window.innerWidth - (parentRect.x + parentRect.width) < 0;
         outLeft = parentRect.x + parentRect.width - conRect.width < 0;
@@ -146,7 +214,11 @@ export class UUIOverlayElement extends LitElement {
       isOutsideScreen = outRight || outLeft || outTop || outBot;
     }
 
-    if (this.overlayPos === 'botLeft' || this.overlayPos === 'botRight') {
+    if (
+      this.overlayPos === 'botLeft' ||
+      this.overlayPos === 'botCenter' ||
+      this.overlayPos === 'botRight'
+    ) {
       const outTop = parentRect.y + parentRect.height < 0;
       const outBot =
         window.innerHeight -
@@ -159,14 +231,20 @@ export class UUIOverlayElement extends LitElement {
         outRight = window.innerWidth - (parentRect.x + conRect.width) < 0;
         outLeft = parentRect.x < 0;
       }
+      if (this.overlayPos === 'botCenter') {
+        outRight =
+          window.innerWidth -
+            (parentRect.x + (parentRect.width / 2 + conRect.width / 2)) <
+          0;
+        outLeft = parentRect.x + (parentRect.width / 2 - conRect.width / 2) < 0;
+      }
       if (this.overlayPos === 'botRight') {
         outRight = window.innerWidth - (parentRect.x + parentRect.width) < 0;
         outLeft = parentRect.x + parentRect.width - conRect.width < 0;
       }
       isOutsideScreen = outRight || outLeft || outTop || outBot;
     }
-
-    this.useAutoPlacement = isOutsideScreen;
+    return isOutsideScreen;
   }
 
   staticPlacement(
@@ -179,37 +257,96 @@ export class UUIOverlayElement extends LitElement {
       conRect !== (null || undefined) &&
       rootElement !== (null || undefined)
     ) {
-      switch (this.overlayPos) {
-        case 'topLeft':
-          rootElement.style.top = `${parentRect.y - conRect.height}px`;
-          rootElement.style.left = `${parentRect.x}px`;
-          break;
-        case 'topRight':
-          rootElement.style.top = `${parentRect.y - conRect.height}px`;
-          rootElement.style.left = `${
-            parentRect.x + parentRect.width - conRect.width
-          }px`;
-          break;
-        case 'botLeft':
-          rootElement.style.top = `${parentRect.y + parentRect.height}px`;
-          rootElement.style.left = `${parentRect.x}px`;
-          break;
-        case 'botRight':
-          rootElement.style.top = `${parentRect.y + parentRect.height}px`;
-          rootElement.style.left = `${
-            parentRect.x + parentRect.width - conRect.width
-          }px`;
-          break;
-        case 'left':
-          rootElement.style.top = `${parentRect.y}px`;
-          rootElement.style.left = `${parentRect.x - conRect.width}px`;
-          break;
-        case 'right':
-          rootElement.style.top = `${parentRect.y}px`;
-          rootElement.style.left = `${parentRect.x + parentRect.width}px`;
-          break;
-        default:
-          break;
+      if (
+        this.overlayPos === 'topLeft' ||
+        this.overlayPos === 'topCenter' ||
+        this.overlayPos === 'topRight'
+      ) {
+        rootElement.style.top = `${parentRect.y - conRect.height}px`;
+        switch (this.overlayPos) {
+          case 'topLeft':
+            rootElement.style.left = `${parentRect.x}px`;
+            break;
+          case 'topCenter':
+            rootElement.style.left = `${
+              parentRect.x + (parentRect.width / 2 - conRect.width / 2)
+            }px`;
+            break;
+          case 'topRight':
+            rootElement.style.left = `${
+              parentRect.x + parentRect.width - conRect.width
+            }px`;
+            break;
+        }
+      }
+
+      if (
+        this.overlayPos === 'botLeft' ||
+        this.overlayPos === 'botCenter' ||
+        this.overlayPos === 'botRight'
+      ) {
+        rootElement.style.top = `${parentRect.y + parentRect.height}px`;
+        switch (this.overlayPos) {
+          case 'botLeft':
+            rootElement.style.left = `${parentRect.x}px`;
+            break;
+          case 'botCenter':
+            rootElement.style.left = `${
+              parentRect.x + (parentRect.width / 2 - conRect.width / 2)
+            }px`;
+            break;
+          case 'botRight':
+            rootElement.style.left = `${
+              parentRect.x + parentRect.width - conRect.width
+            }px`;
+            break;
+        }
+      }
+
+      if (
+        this.overlayPos === 'leftTop' ||
+        this.overlayPos === 'leftCenter' ||
+        this.overlayPos === 'leftBot'
+      ) {
+        rootElement.style.left = `${parentRect.x - conRect.width}px`;
+        switch (this.overlayPos) {
+          case 'leftTop':
+            rootElement.style.top = `${parentRect.y}px`;
+            break;
+          case 'leftCenter':
+            rootElement.style.top = `${
+              parentRect.y + (parentRect.height / 2 - conRect.height / 2)
+            }px`;
+            break;
+          case 'leftBot':
+            rootElement.style.top = `${
+              parentRect.y - (conRect.height - parentRect.height)
+            }px`;
+            break;
+        }
+      }
+
+      if (
+        this.overlayPos === 'rightTop' ||
+        this.overlayPos === 'rightCenter' ||
+        this.overlayPos === 'rightBot'
+      ) {
+        rootElement.style.left = `${parentRect.x + parentRect.width}px`;
+        switch (this.overlayPos) {
+          case 'rightTop':
+            rootElement.style.top = `${parentRect.y}px`;
+            break;
+          case 'rightCenter':
+            rootElement.style.top = `${
+              parentRect.y + (parentRect.height / 2 - conRect.height / 2)
+            }px`;
+            break;
+          case 'rightBot':
+            rootElement.style.top = `${
+              parentRect.y - (conRect.height - parentRect.height)
+            }px`;
+            break;
+        }
       }
     }
   }
