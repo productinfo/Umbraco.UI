@@ -120,7 +120,7 @@ export class UUIOverlayElement extends LitElement {
       const centerToParentX = halfWindowX - parentRect.x;
       const centerToParentY = halfWindowY - parentRect.y;
 
-      //Is the center of the screen within the X or Y axis of the component?
+      // Is the center of the screen within the X or Y axis of the component?
       const isInCenterX =
         centerToParentX > 0 - halfConX &&
         centerToParentX < parentRect.width + halfConX;
@@ -128,15 +128,15 @@ export class UUIOverlayElement extends LitElement {
         centerToParentY > 0 - halfConY &&
         centerToParentY < parentRect.height + halfConY;
 
-      //Detect which side of the center the parent element is on, on both axes.
+      // Detect which side of the center the parent element is on, on both axes.
       const posXFlip = parentRect.x + halfParentX - halfWindowX < 0;
       const posYFlip = parentRect.y + halfParentY - halfWindowY < 0;
 
-      //Flip the target left/right and top/down based on the position of the parent element relative to the screen center
+      // Flip the target left/right and top/down based on the position of the parent element relative to the screen center
       const posXInput = posXFlip ? window.innerWidth : 0;
       const posYInput = posYFlip ? window.innerHeight : 0;
 
-      //Clamp the overlay container to the edges of the parent element.
+      // Clamp the overlay container to the edges of the parent element.
       const posX = this.mathClamp(
         posXInput,
         parentRect.x - conRect.width,
@@ -148,7 +148,7 @@ export class UUIOverlayElement extends LitElement {
         parentRect.y + parentRect.height
       );
 
-      //Clamp the overlay to the screen so that it "always" stays inside:
+      // Clamp the overlay to the screen so that it "always" stays inside:
       const posXClamp = this.mathClamp(
         posX,
         0,
@@ -160,7 +160,7 @@ export class UUIOverlayElement extends LitElement {
         window.innerHeight - conRect.height
       );
 
-      //Make the overlay container glide along the edges of the parent.
+      // Make the overlay container glide along the edges of the parent.
       const posXFinal = isInCenterX
         ? centerToParentX + parentRect.x - halfConX
         : posXClamp;
@@ -168,7 +168,7 @@ export class UUIOverlayElement extends LitElement {
         ? centerToParentY + parentRect.y - halfConY
         : posYClamp;
 
-      //Make sure the overlay container doesn't overlap the parent and that it stays on screen.
+      // Make sure the overlay container doesn't overlap the parent and that it stays on screen.
       const posYActualFinal = isInCenterX
         ? this.mathClamp(
             centerToParentY - halfParentY < 0
@@ -179,7 +179,7 @@ export class UUIOverlayElement extends LitElement {
           )
         : posYFinal;
 
-      //apply the positions as styling
+      // Apply the positions as styling
       rootElement.style.top = `${posYActualFinal}px`;
       rootElement.style.left = `${posXFinal}px`;
 
