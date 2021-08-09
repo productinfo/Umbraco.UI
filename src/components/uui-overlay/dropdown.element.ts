@@ -27,7 +27,7 @@ export class DropdownTest extends LitElement {
         <div class="dropdown" @click=${() => (this.open = !this.open)}>
           I WILL OPEN THE DROPDOWN
         </div>
-        <uui-overlay .open=${this.open}>
+        <uui-overlay .open=${this.open} overlayPos="topLeft">
           <div
             style="height: 200px; width: 100px; padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
           >

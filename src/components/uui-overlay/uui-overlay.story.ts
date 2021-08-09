@@ -10,10 +10,10 @@ export default {
 export const Default = () => {
   const element = html`
     <div
-      style="position: fixed; margin: -24px; width: 50vw; height: 100vh; background: #0000ff1a"
+      style="position: fixed; margin: -24px; width: 50vw; height: 100vh; pointer-events: none; background: #0000ff1a"
     ></div>
     <div
-      style="position: fixed; margin: -24px; width: 100vw; height: 50vh; background: #ff9d0029"
+      style="position: fixed; margin: -24px; width: 100vw; height: 50vh; pointer-events: none; background: #ff9d0029"
     ></div>
     <div style="width: 200px">
       The overlay should go over me <br />
