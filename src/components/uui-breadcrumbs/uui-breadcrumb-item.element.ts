@@ -6,12 +6,19 @@ export class UUIBreadcrumbItemElement extends LitElement {
     css`
       :host {
         font-size: var(--uui-size-small, 12px);
-        color: #515054;
+        color: var(--uui-interface-contrast);
       }
 
       a,
       a:visited {
-        color: #515054;
+        color: var(--uui-interface-contrast);
+      }
+
+      a:hover {
+        color: var(--uui-interface-contrast-hover);
+      }
+      a:focus {
+        color: var(--uui-interface-contrast-focus);
       }
 
       :host(:last-of-type) [part='separator'],
