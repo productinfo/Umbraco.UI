@@ -1,7 +1,5 @@
-import { property, query, state } from 'lit/decorators';
+import { property, state } from 'lit/decorators';
 import { LitElement, html, css } from 'lit';
-import { resolveTxt } from 'dns';
-import { timeStamp } from 'console';
 
 export type OverlayPosition =
   | 'topLeft'
@@ -41,11 +39,11 @@ export class UUIOverlayElement extends LitElement {
   ];
 
   @state() _open = false;
-  @state() parent: Element | undefined | null;
-  @state() rootElement: HTMLElement | undefined | null;
+  @state() rootElement?: HTMLElement;
   @state() top = false;
   @state() useAutoPlacement = false;
 
+  @property({ type: Object }) parent?: Element;
   @property({ type: String }) overlayPos: OverlayPosition = 'botLeft';
 
   @property({ type: Boolean })
@@ -58,7 +56,6 @@ export class UUIOverlayElement extends LitElement {
   }
 
   firstUpdated() {
-    this.parent = this.shadowRoot?.host.previousElementSibling;
     this.rootElement = this.shadowRoot?.host as HTMLElement;
   }
 

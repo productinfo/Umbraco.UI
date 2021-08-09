@@ -1,4 +1,4 @@
-import { property, query, state } from 'lit/decorators';
+import { query, state } from 'lit/decorators';
 import { LitElement, html, css } from 'lit';
 /**
  *  @element dropdown-test
@@ -7,10 +7,10 @@ import { LitElement, html, css } from 'lit';
 export class DropdownTest extends LitElement {
   static styles = [
     css`
-      .container {
+      #container {
         width: 200px;
       }
-      .dropdown {
+      #dropdown {
         display: block;
         border: 1px solid black;
         height: 50px;
@@ -19,17 +19,22 @@ export class DropdownTest extends LitElement {
     `,
   ];
 
+  @query('#dropdown') dropdown?: HTMLElement;
   @state() open = false;
 
   render() {
     return html`
-      <div class="container">
-        <div class="dropdown" @click=${() => (this.open = !this.open)}>
+      <div id="container">
+        <div id="dropdown" @click=${() => (this.open = !this.open)}>
           I WILL OPEN THE DROPDOWN
         </div>
-        <uui-overlay .open=${this.open} overlayPos="topLeft">
+        <uui-overlay
+          .open=${this.open}
+          .parent=${this.dropdown}
+          overlayPos="topLeft"
+        >
           <div
-            style="height: 200px; width: 100px; padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
+            style="height: 200px; width: 200px; padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
           >
             I am a dropdown
             <button>jeg er en knap</button>

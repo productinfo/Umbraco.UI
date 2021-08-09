@@ -1,5 +1,4 @@
 import { html } from 'lit-html';
-import { state } from 'lit/decorators';
 import '.';
 
 export default {
