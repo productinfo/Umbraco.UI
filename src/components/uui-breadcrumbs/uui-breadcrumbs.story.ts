@@ -3,7 +3,7 @@ import { html } from 'lit-html';
 import './index';
 
 export default {
-  title: 'Basics/Breadcrumbs',
+  title: 'Misc/Breadcrumbs',
   component: 'uui-breadcrumbs',
 };
 
