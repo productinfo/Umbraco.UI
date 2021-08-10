@@ -48,9 +48,10 @@ export class UUIOverlayElement extends LitElement {
   @state() _overlayPosWant: OverlayPosition = 'botLeft';
   @state() overlayPosCurrent: OverlayPosition = this._overlayPosWant;
   @state() rootElement?: HTMLElement;
-  @query('#container') containerElement?: Element;
   @state() top = false;
+  @state() intersectionObserver?: IntersectionObserver;
 
+  @query('#container') containerElement?: Element;
   @property({ type: Boolean }) useAutoPlacement = false;
   @property({ type: Object }) parent?: Element;
   @property({ type: String })
@@ -59,6 +60,7 @@ export class UUIOverlayElement extends LitElement {
   }
   set overlayPos(newValue) {
     this._overlayPosWant = newValue;
+    this.overlayPosCurrent = newValue;
     this.updateOverlay();
   }
 
@@ -73,7 +75,6 @@ export class UUIOverlayElement extends LitElement {
 
   firstUpdated() {
     this.rootElement = this.shadowRoot?.host as HTMLElement;
-    this.createOberserver();
   }
 
   // connectedCallback() {
@@ -85,6 +86,25 @@ export class UUIOverlayElement extends LitElement {
   //   super.disconnectedCallback();
   // }
 
+  initOverlay() {
+    if (this.rootElement) {
+      //Reset Styling
+      this.rootElement.style.opacity = '0';
+
+      setTimeout(() => {
+        this.updateOverlay();
+        this.createOberserver();
+        this.rootElement!.style.opacity = '1';
+        // document.addEventListener('scroll', () => this.updateOverlay());
+      }, 0);
+    }
+  }
+
+  closeOverlay() {
+    // document.removeEventListener('scroll', () => this.updateOverlay());
+    this.intersectionObserver?.disconnect();
+  }
+
   createOberserver() {
     const options = {
       root: null,
@@ -92,14 +112,12 @@ export class UUIOverlayElement extends LitElement {
       threshold: 1,
     };
 
-    const observer = new IntersectionObserver(
+    this.intersectionObserver = new IntersectionObserver(
       this.intersectionCallback,
       options
     );
 
-    setTimeout(() => {
-      observer.observe(this.containerElement as Element);
-    }, 10000);
+    this.intersectionObserver.observe(this.containerElement as Element);
   }
 
   intersectionCallback = (
@@ -107,66 +125,48 @@ export class UUIOverlayElement extends LitElement {
     observer: any
   ) => {
     entries.forEach(element => {
-      if (element.isIntersecting) {
-        this.overlayPosCurrent = this.overlayPos;
-      } else {
-        this.overlayPosCurrent = this.getFlipSide();
+      if (!element.isIntersecting) {
+        this.SetFlipSide(element.intersectionRect);
+        this.updateOverlay();
       }
     });
   };
 
-  getFlipSide(): OverlayPosition {
-    const sideSplit = this.overlayPos.split(/(?=[A-Z])/);
-    const wantSide = sideSplit[0];
+  SetFlipSide(rect: DOMRectReadOnly) {
+    const sideSplit = this.overlayPosCurrent.split(/(?=[A-Z])/);
+    const currentSide = sideSplit[0];
     const sideSuffix = sideSplit[1];
-    let otherside = '';
-    switch (wantSide) {
-      case 'top':
-        otherside = 'bot';
-        break;
-      case 'bot':
-        otherside = 'top';
-        break;
-      case 'left':
-        otherside = 'right';
-        break;
-      case 'right':
-        otherside = 'left';
-        break;
+    const viewportHeight = document.documentElement.clientHeight;
+    const viewportWidth = document.documentElement.clientWidth;
+
+    let flipSide = '';
+
+    if (currentSide === 'top' && rect.y <= 0) {
+      flipSide = 'bot';
+    }
+    if (currentSide === 'bot' && rect.y + rect.height >= viewportHeight) {
+      flipSide = 'top';
+    }
+    if (currentSide === 'left' && rect.x <= 0) {
+      flipSide = 'right';
+    }
+    if (currentSide === 'right' && rect.x + rect.width >= viewportWidth) {
+      flipSide = 'left';
     }
 
-    return (otherside + sideSuffix) as OverlayPosition;
-  }
-
-  initOverlay() {
-    if (this.rootElement) {
-      //Reset Styling
-      this.rootElement.style.opacity = '0';
-      this.rootElement.style.top = '';
-      this.rootElement.style.bottom = '';
-      this.rootElement.style.left = '';
-      this.rootElement.style.right = '';
-
-      setTimeout(() => {
-        this.updateOverlay();
-        this.rootElement!.style.opacity = '1';
-        document.addEventListener('scroll', () => this.updateOverlay());
-      }, 0);
+    // If we need to flip, do it, otherwise dont do anything.
+    if (flipSide) {
+      this.overlayPosCurrent = (flipSide + sideSuffix) as OverlayPosition;
     }
-  }
-
-  closeOverlay() {
-    document.removeEventListener('scroll', () => this.updateOverlay());
   }
 
   updateOverlay() {
     if (!this.shadowRoot) {
       return;
     }
-
     // TODO: These 3 should propably be cashed.
     const conRect = this.shadowRoot!.querySelector(
-      '.container'
+      '#container'
     )?.getBoundingClientRect()!;
     const parentRect = this.parent!.getBoundingClientRect()!;
     const rootElement = this.rootElement!;
@@ -315,25 +315,29 @@ export class UUIOverlayElement extends LitElement {
       conRect !== (null || undefined) &&
       rootElement !== (null || undefined)
     ) {
+      console.log('Update 2', this.overlayPosCurrent);
+      rootElement.style.top = '';
+      rootElement.style.bottom = '';
+      rootElement.style.left = '';
+      rootElement.style.right = '';
       if (
         this.overlayPosCurrent === 'topLeft' ||
         this.overlayPosCurrent === 'topCenter' ||
         this.overlayPosCurrent === 'topRight'
       ) {
-        rootElement.style.top = `${parentRect.y - conRect.height}px`;
+        rootElement.style.top = `${-conRect.height - parentRect.height}px`;
         switch (this.overlayPosCurrent) {
           case 'topLeft':
-            rootElement.style.left = `${parentRect.x}px`;
+            rootElement.style.left = `${0}px`;
             break;
           case 'topCenter':
-            rootElement.style.left = `${
-              parentRect.x + (parentRect.width / 2 - conRect.width / 2)
-            }px`;
+            rootElement.style.left = `${+(
+              parentRect.width / 2 -
+              conRect.width / 2
+            )}px`;
             break;
           case 'topRight':
-            rootElement.style.left = `${
-              parentRect.x + parentRect.width - conRect.width
-            }px`;
+            rootElement.style.left = `${+parentRect.width - conRect.width}px`;
             break;
         }
       }
@@ -343,20 +347,19 @@ export class UUIOverlayElement extends LitElement {
         this.overlayPosCurrent === 'botCenter' ||
         this.overlayPosCurrent === 'botRight'
       ) {
-        rootElement.style.top = `${parentRect.y + parentRect.height}px`;
+        rootElement.style.top = `${0}px`;
         switch (this.overlayPosCurrent) {
           case 'botLeft':
-            rootElement.style.left = `${parentRect.x}px`;
+            rootElement.style.left = `${0}px`;
             break;
           case 'botCenter':
-            rootElement.style.left = `${
-              parentRect.x + (parentRect.width / 2 - conRect.width / 2)
-            }px`;
+            rootElement.style.left = `${+(
+              parentRect.width / 2 -
+              conRect.width / 2
+            )}px`;
             break;
           case 'botRight':
-            rootElement.style.left = `${
-              parentRect.x + parentRect.width - conRect.width
-            }px`;
+            rootElement.style.left = `${+parentRect.width - conRect.width}px`;
             break;
         }
       }
@@ -366,20 +369,18 @@ export class UUIOverlayElement extends LitElement {
         this.overlayPosCurrent === 'leftCenter' ||
         this.overlayPosCurrent === 'leftBot'
       ) {
-        rootElement.style.left = `${parentRect.x - conRect.width}px`;
+        rootElement.style.left = `${-conRect.width}px`;
         switch (this.overlayPosCurrent) {
           case 'leftTop':
-            rootElement.style.top = `${parentRect.y}px`;
+            rootElement.style.top = `${-parentRect.height}px`;
             break;
           case 'leftCenter':
             rootElement.style.top = `${
-              parentRect.y + (parentRect.height / 2 - conRect.height / 2)
+              -parentRect.height / 2 - conRect.height / 2
             }px`;
             break;
           case 'leftBot':
-            rootElement.style.top = `${
-              parentRect.y - (conRect.height - parentRect.height)
-            }px`;
+            rootElement.style.top = `${-conRect.height}px`;
             break;
         }
       }
@@ -389,20 +390,18 @@ export class UUIOverlayElement extends LitElement {
         this.overlayPosCurrent === 'rightCenter' ||
         this.overlayPosCurrent === 'rightBot'
       ) {
-        rootElement.style.left = `${parentRect.x + parentRect.width}px`;
+        rootElement.style.left = `${+parentRect.width}px`;
         switch (this.overlayPosCurrent) {
           case 'rightTop':
-            rootElement.style.top = `${parentRect.y}px`;
+            rootElement.style.top = `${-parentRect.height}px`;
             break;
           case 'rightCenter':
             rootElement.style.top = `${
-              parentRect.y + (parentRect.height / 2 - conRect.height / 2)
+              -parentRect.height / 2 - conRect.height / 2
             }px`;
             break;
           case 'rightBot':
-            rootElement.style.top = `${
-              parentRect.y - (conRect.height - parentRect.height)
-            }px`;
+            rootElement.style.top = `${-conRect.height}px`;
             break;
         }
       }
