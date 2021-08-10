@@ -1,4 +1,4 @@
-import { property, state } from 'lit/decorators';
+import { property, query, state } from 'lit/decorators';
 import { LitElement, html, css } from 'lit';
 
 export type OverlayPosition =
@@ -16,16 +16,16 @@ export type OverlayPosition =
   | 'rightBot';
 
 /**
- *  @element uui-avatar
+ *  @element uui-overlay
  */
 
 export class UUIOverlayElement extends LitElement {
   static styles = [
     css`
       :host {
-        position: fixed;
+        position: relative;
       }
-      .container {
+      #container {
         position: absolute;
         background: #ff000038;
       }
@@ -45,18 +45,20 @@ export class UUIOverlayElement extends LitElement {
   ];
 
   @state() _open = false;
-  @state() _overlayPos: OverlayPosition = 'botLeft';
+  @state() _overlayPosWant: OverlayPosition = 'botLeft';
+  @state() overlayPosCurrent: OverlayPosition = this._overlayPosWant;
   @state() rootElement?: HTMLElement;
+  @query('#container') containerElement?: Element;
   @state() top = false;
 
   @property({ type: Boolean }) useAutoPlacement = false;
   @property({ type: Object }) parent?: Element;
   @property({ type: String })
   get overlayPos() {
-    return this._overlayPos;
+    return this._overlayPosWant;
   }
   set overlayPos(newValue) {
-    this._overlayPos = newValue;
+    this._overlayPosWant = newValue;
     this.updateOverlay();
   }
 
@@ -71,16 +73,70 @@ export class UUIOverlayElement extends LitElement {
 
   firstUpdated() {
     this.rootElement = this.shadowRoot?.host as HTMLElement;
+    this.createOberserver();
   }
 
   // connectedCallback() {
   //   super.connectedCallback();
-  //   document.addEventListener('scroll', () => this.updateOverlay());
+  // // document.addEventListener('scroll', () => this.updateOverlay());
   // }
   // disconnectedCallback() {
-  //   document.removeEventListener('scroll', () => this.updateOverlay());
+  //   // document.removeEventListener('scroll', () => this.updateOverlay());
   //   super.disconnectedCallback();
   // }
+
+  createOberserver() {
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 1,
+    };
+
+    const observer = new IntersectionObserver(
+      this.intersectionCallback,
+      options
+    );
+
+    setTimeout(() => {
+      observer.observe(this.containerElement as Element);
+    }, 10000);
+  }
+
+  intersectionCallback = (
+    entries: IntersectionObserverEntry[],
+    observer: any
+  ) => {
+    entries.forEach(element => {
+      if (element.isIntersecting) {
+        this.overlayPosCurrent = this.overlayPos;
+      } else {
+        this.overlayPosCurrent = this.getFlipSide();
+      }
+    });
+  };
+
+  getFlipSide(): OverlayPosition {
+    const sideSplit = this.overlayPos.split(/(?=[A-Z])/);
+    const wantSide = sideSplit[0];
+    const sideSuffix = sideSplit[1];
+    let otherside = '';
+    switch (wantSide) {
+      case 'top':
+        otherside = 'bot';
+        break;
+      case 'bot':
+        otherside = 'top';
+        break;
+      case 'left':
+        otherside = 'right';
+        break;
+      case 'right':
+        otherside = 'left';
+        break;
+    }
+
+    return (otherside + sideSuffix) as OverlayPosition;
+  }
 
   initOverlay() {
     if (this.rootElement) {
@@ -115,12 +171,14 @@ export class UUIOverlayElement extends LitElement {
     const parentRect = this.parent!.getBoundingClientRect()!;
     const rootElement = this.rootElement!;
 
-    this.useAutoPlacement = this.detectIfOutsideScreen(conRect, parentRect);
-    if (this.useAutoPlacement) {
-      this.autoPlacement(conRect, parentRect, rootElement);
-    } else {
-      this.staticPlacement(conRect, parentRect, rootElement);
-    }
+    this.staticPlacement(conRect, parentRect, rootElement);
+
+    // this.useAutoPlacement = this.detectIfOutsideScreen(conRect, parentRect);
+    // if (this.useAutoPlacement) {
+    //   this.autoPlacement(conRect, parentRect, rootElement);
+    // } else {
+    //   this.staticPlacement(conRect, parentRect, rootElement);
+    // }
   }
 
   detectIfOutsideScreen(conRect: DOMRect, parentRect: DOMRect): boolean {
@@ -258,12 +316,12 @@ export class UUIOverlayElement extends LitElement {
       rootElement !== (null || undefined)
     ) {
       if (
-        this.overlayPos === 'topLeft' ||
-        this.overlayPos === 'topCenter' ||
-        this.overlayPos === 'topRight'
+        this.overlayPosCurrent === 'topLeft' ||
+        this.overlayPosCurrent === 'topCenter' ||
+        this.overlayPosCurrent === 'topRight'
       ) {
         rootElement.style.top = `${parentRect.y - conRect.height}px`;
-        switch (this.overlayPos) {
+        switch (this.overlayPosCurrent) {
           case 'topLeft':
             rootElement.style.left = `${parentRect.x}px`;
             break;
@@ -281,12 +339,12 @@ export class UUIOverlayElement extends LitElement {
       }
 
       if (
-        this.overlayPos === 'botLeft' ||
-        this.overlayPos === 'botCenter' ||
-        this.overlayPos === 'botRight'
+        this.overlayPosCurrent === 'botLeft' ||
+        this.overlayPosCurrent === 'botCenter' ||
+        this.overlayPosCurrent === 'botRight'
       ) {
         rootElement.style.top = `${parentRect.y + parentRect.height}px`;
-        switch (this.overlayPos) {
+        switch (this.overlayPosCurrent) {
           case 'botLeft':
             rootElement.style.left = `${parentRect.x}px`;
             break;
@@ -304,12 +362,12 @@ export class UUIOverlayElement extends LitElement {
       }
 
       if (
-        this.overlayPos === 'leftTop' ||
-        this.overlayPos === 'leftCenter' ||
-        this.overlayPos === 'leftBot'
+        this.overlayPosCurrent === 'leftTop' ||
+        this.overlayPosCurrent === 'leftCenter' ||
+        this.overlayPosCurrent === 'leftBot'
       ) {
         rootElement.style.left = `${parentRect.x - conRect.width}px`;
-        switch (this.overlayPos) {
+        switch (this.overlayPosCurrent) {
           case 'leftTop':
             rootElement.style.top = `${parentRect.y}px`;
             break;
@@ -327,12 +385,12 @@ export class UUIOverlayElement extends LitElement {
       }
 
       if (
-        this.overlayPos === 'rightTop' ||
-        this.overlayPos === 'rightCenter' ||
-        this.overlayPos === 'rightBot'
+        this.overlayPosCurrent === 'rightTop' ||
+        this.overlayPosCurrent === 'rightCenter' ||
+        this.overlayPosCurrent === 'rightBot'
       ) {
         rootElement.style.left = `${parentRect.x + parentRect.width}px`;
-        switch (this.overlayPos) {
+        switch (this.overlayPosCurrent) {
           case 'rightTop':
             rootElement.style.top = `${parentRect.y}px`;
             break;
@@ -445,7 +503,7 @@ export class UUIOverlayElement extends LitElement {
   render() {
     return this.open
       ? html`
-          <div class="container">
+          <div id="container">
             <slot></slot>
           </div>
         `
