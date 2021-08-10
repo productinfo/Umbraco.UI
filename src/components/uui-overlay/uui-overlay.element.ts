@@ -51,7 +51,7 @@ export class UUIOverlayElement extends LitElement {
   @state() top = false;
   @state() intersectionObserver?: IntersectionObserver;
 
-  @query('#container') containerElement?: Element;
+  @query('#container') containerElement?: HTMLElement;
   @property({ type: Boolean }) useAutoPlacement = false;
   @property({ type: Object }) parent?: Element;
   @property({ type: String })
@@ -135,7 +135,7 @@ export class UUIOverlayElement extends LitElement {
   SetFlipSide(rect: DOMRectReadOnly) {
     const sideSplit = this.overlayPosCurrent.split(/(?=[A-Z])/);
     const currentSide = sideSplit[0];
-    const sideSuffix = sideSplit[1];
+    const sideSuffix = sideSplit[1] || 'Center';
     const viewportHeight = document.documentElement.clientHeight;
     const viewportWidth = document.documentElement.clientWidth;
 
@@ -165,9 +165,7 @@ export class UUIOverlayElement extends LitElement {
       return;
     }
     // TODO: These 3 should propably be cashed.
-    const conRect = this.shadowRoot!.querySelector(
-      '#container'
-    )?.getBoundingClientRect()!;
+    const conRect = this.containerElement?.getBoundingClientRect()!;
     const parentRect = this.parent!.getBoundingClientRect()!;
     const rootElement = this.rootElement!;
 
@@ -305,106 +303,174 @@ export class UUIOverlayElement extends LitElement {
     return isOutsideScreen;
   }
 
+  convertPosToVector() {
+    return { originX: 0, originY: 0 };
+  }
+
   staticPlacement(
     conRect: DOMRect,
     parentRect: DOMRect,
     rootElement: HTMLElement
   ) {
-    if (
-      parentRect !== (null || undefined) &&
-      conRect !== (null || undefined) &&
-      rootElement !== (null || undefined)
-    ) {
-      console.log('Update 2', this.overlayPosCurrent);
+    if (parentRect != null && conRect != null && rootElement != null) {
       rootElement.style.top = '';
       rootElement.style.bottom = '';
       rootElement.style.left = '';
       rootElement.style.right = '';
-      if (
-        this.overlayPosCurrent === 'topLeft' ||
-        this.overlayPosCurrent === 'topCenter' ||
-        this.overlayPosCurrent === 'topRight'
-      ) {
-        rootElement.style.top = `${-conRect.height - parentRect.height}px`;
-        switch (this.overlayPosCurrent) {
-          case 'topLeft':
-            rootElement.style.left = `${0}px`;
-            break;
-          case 'topCenter':
-            rootElement.style.left = `${+(
-              parentRect.width / 2 -
-              conRect.width / 2
-            )}px`;
-            break;
-          case 'topRight':
-            rootElement.style.left = `${+parentRect.width - conRect.width}px`;
-            break;
-        }
+
+      let originX = 0;
+      let originY = 0;
+      let alignX = 0;
+      let alignY = 0;
+
+      if (this.overlayPosCurrent.indexOf('top') !== -1) {
+        alignY = 1;
+        originY = 0;
+      }
+
+      if (this.overlayPosCurrent.indexOf('bot') !== -1) {
+        alignY = 0;
+        originY = 1;
       }
 
       if (
-        this.overlayPosCurrent === 'botLeft' ||
-        this.overlayPosCurrent === 'botCenter' ||
-        this.overlayPosCurrent === 'botRight'
+        this.overlayPosCurrent.indexOf('top') !== -1 ||
+        this.overlayPosCurrent.indexOf('bot') !== -1
       ) {
-        rootElement.style.top = `${0}px`;
-        switch (this.overlayPosCurrent) {
-          case 'botLeft':
-            rootElement.style.left = `${0}px`;
-            break;
-          case 'botCenter':
-            rootElement.style.left = `${+(
-              parentRect.width / 2 -
-              conRect.width / 2
-            )}px`;
-            break;
-          case 'botRight':
-            rootElement.style.left = `${+parentRect.width - conRect.width}px`;
-            break;
+        if (this.overlayPosCurrent.indexOf('Center') !== -1) {
+          alignX = 0.5;
+          originX = 0.5;
         }
       }
 
-      if (
-        this.overlayPosCurrent === 'leftTop' ||
-        this.overlayPosCurrent === 'leftCenter' ||
-        this.overlayPosCurrent === 'leftBot'
-      ) {
-        rootElement.style.left = `${-conRect.width}px`;
-        switch (this.overlayPosCurrent) {
-          case 'leftTop':
-            rootElement.style.top = `${-parentRect.height}px`;
-            break;
-          case 'leftCenter':
-            rootElement.style.top = `${
-              -parentRect.height / 2 - conRect.height / 2
-            }px`;
-            break;
-          case 'leftBot':
-            rootElement.style.top = `${-conRect.height}px`;
-            break;
-        }
+      if (this.overlayPosCurrent.indexOf('Left') !== -1) {
+        alignX = 0;
+        originX = 0;
+      }
+      if (this.overlayPosCurrent.indexOf('Right') !== -1) {
+        alignX = 1;
+        originX = 1;
+      }
+
+      if (this.overlayPosCurrent.indexOf('left') !== -1) {
+        alignX = 1;
+        originX = 0;
+      }
+      if (this.overlayPosCurrent.indexOf('right') !== -1) {
+        alignX = 0;
+        originX = 1;
       }
 
       if (
-        this.overlayPosCurrent === 'rightTop' ||
-        this.overlayPosCurrent === 'rightCenter' ||
-        this.overlayPosCurrent === 'rightBot'
+        this.overlayPosCurrent.indexOf('left') !== -1 ||
+        this.overlayPosCurrent.indexOf('right') !== -1
       ) {
-        rootElement.style.left = `${+parentRect.width}px`;
-        switch (this.overlayPosCurrent) {
-          case 'rightTop':
-            rootElement.style.top = `${-parentRect.height}px`;
-            break;
-          case 'rightCenter':
-            rootElement.style.top = `${
-              -parentRect.height / 2 - conRect.height / 2
-            }px`;
-            break;
-          case 'rightBot':
-            rootElement.style.top = `${-conRect.height}px`;
-            break;
+        if (this.overlayPosCurrent.indexOf('Center') !== -1) {
+          alignY = 0.5;
+          originY = 0.5;
         }
       }
+
+      if (this.overlayPosCurrent.indexOf('Top') !== -1) {
+        alignY = 0;
+        originY = 0;
+      }
+      if (this.overlayPosCurrent.indexOf('Bot') !== -1) {
+        alignY = 1;
+        originY = 1;
+      }
+
+      const calcV =
+        -conRect.height * alignY - parentRect.height * (1 - originY);
+      const calcH = -conRect.width * alignX + parentRect.width * originX;
+
+      rootElement.style.top = `${calcV}px`;
+      rootElement.style.left = `${calcH}px`;
+
+      // if (
+      //   this.overlayPosCurrent === 'topLeft' ||
+      //   this.overlayPosCurrent === 'topCenter' ||
+      //   this.overlayPosCurrent === 'topRight'
+      // ) {
+
+      //   //rootElement.style.top = `${-conRect.height - parentRect.height}px`;
+      //   switch (this.overlayPosCurrent) {
+      //     case 'topLeft':
+      //       rootElement.style.left = `${0}px`;
+      //       break;
+      //     case 'topCenter':
+      //       rootElement.style.left = `${
+      //          (parentRect.width / 2 - conRect.width / 2)
+      //       }px`;
+      //       break;
+      //     case 'topRight':
+      //       rootElement.style.left = `${(parentRect.width - conRect.width)}px`;
+      //       // conElement.style.left = `${Number.parseFloat(conElement.style.left.split('px')[0]) ? Number.parseFloat(conElement.style.left.split('px')[0]) : 0 + this.mathClamp(-conRect.x, 0, Infinity)}px`;
+      //       // console.log(conElement, Number.parseFloat(conElement.style.left.split('px')[0]))
+      //       break;
+      //   }
+      // }
+
+      // if (
+      //   this.overlayPosCurrent === 'botLeft' ||
+      //   this.overlayPosCurrent === 'botCenter' ||
+      //   this.overlayPosCurrent === 'botRight'
+      // ) {
+      //   //rootElement.style.top = `${0}px`;
+      //   switch (this.overlayPosCurrent) {
+      //     case 'botLeft':
+      //       rootElement.style.left = `${0}px`;
+      //       break;
+      //     case 'botCenter':
+      //       rootElement.style.left = `${
+      //          + (parentRect.width / 2 - conRect.width / 2)
+      //       }px`;
+      //       break;
+      //     case 'botRight':
+      //       rootElement.style.left = `${
+      //          + parentRect.width - conRect.width
+      //       }px`;
+      //       break;
+      //   }
+      // }
+
+      // if (
+      //   this.overlayPosCurrent === 'leftTop' ||
+      //   this.overlayPosCurrent === 'leftCenter' ||
+      //   this.overlayPosCurrent === 'leftBot'
+      // ) {
+      //   rootElement.style.left = `${ -conRect.width}px`;
+      //   switch (this.overlayPosCurrent) {
+      //     case 'leftTop':
+      //       rootElement.style.top = `${-parentRect.height}px`;
+      //       break;
+      //     case 'leftCenter':
+      //       rootElement.style.top = `${-parentRect.height / 2 - conRect.height / 2}px`;
+      //       break;
+      //     case 'leftBot':
+      //       rootElement.style.top = `${-conRect.height}px`;
+      //       break;
+      //   }
+      // }
+
+      // if (
+      //   this.overlayPosCurrent === 'rightTop' ||
+      //   this.overlayPosCurrent === 'rightCenter' ||
+      //   this.overlayPosCurrent === 'rightBot'
+      // ) {
+      //   rootElement.style.left = `${ + parentRect.width}px`;
+      //   switch (this.overlayPosCurrent) {
+      //     case 'rightTop':
+      //       rootElement.style.top = `${-parentRect.height}px`;
+      //       break;
+      //     case 'rightCenter':
+      //       rootElement.style.top = `${-parentRect.height / 2 - conRect.height / 2}px`;
+      //       break;
+      //     case 'rightBot':
+      //       rootElement.style.top = `${-conRect.height}px`;
+      //       break;
+      //   }
+      // }
     }
   }
 
