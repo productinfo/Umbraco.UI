@@ -12,15 +12,29 @@ export class UUIDatePickerElement extends LitElement {
       :host {
         display: block;
         width: 300px;
+        border: 1px solid #e788;
       }
     `,
     pickerStyle,
   ];
 
   firstUpdated() {
-    this._picker = flatpickr(this.pickerParent, {
-      appendTo: this.pickerParent,
-    });
+    if (this.pickerInput)
+      this._picker = flatpickr(this.pickerInput, {
+        appendTo: this.pickerParent,
+        positionElement: this.pickerParent,
+        onChange: this.setDate,
+        allowInput: true,
+        enableTime: true,
+        defaultDate: new Date(),
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        time_24hr: true,
+      });
+  }
+
+  private setDate(selectedDates: Date[], dateStr: string, instance: any) {
+    console.log(selectedDates, dateStr, instance);
+    if (this.pickerInput) this.pickerInput.value = dateStr;
   }
 
   private _picker: any;
@@ -28,8 +42,12 @@ export class UUIDatePickerElement extends LitElement {
   @query('#picker-parent')
   pickerParent: any;
 
+  @query('#picker-input')
+  pickerInput?: HTMLInputElement;
+
   render() {
-    return html`<div id="picker-parent">open date picker</div>
-      <slot></slot>`;
+    return html`<div id="picker-parent">
+      <input id="picker-input" type="text" />
+    </div>`;
   }
 }
