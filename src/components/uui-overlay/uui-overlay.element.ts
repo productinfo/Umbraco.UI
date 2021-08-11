@@ -52,6 +52,8 @@ export class UUIOverlayElement extends LitElement {
   @state() intersectionObserver?: IntersectionObserver;
 
   @query('#container') containerElement?: HTMLElement;
+
+  @property({ type: Number }) margin = 0;
   @property({ type: Boolean }) useAutoPlacement = false;
   @property({ type: Object }) parent?: Element;
   @property({ type: String })
@@ -141,18 +143,28 @@ export class UUIOverlayElement extends LitElement {
 
     let flipSide = '';
 
-    if (currentSide === 'top' && rect.y <= 0) {
+    // add this to the calculation make sure that the position checks are not off by e.g: 0.1 pixel.
+    const buffer = 2;
+
+    if (currentSide === 'top' && rect.y - buffer <= 0) {
       flipSide = 'bot';
     }
-    if (currentSide === 'bot' && rect.y + rect.height >= viewportHeight) {
+    if (
+      currentSide === 'bot' &&
+      rect.y + rect.height + buffer >= viewportHeight
+    ) {
       flipSide = 'top';
     }
-    if (currentSide === 'left' && rect.x <= 0) {
+    if (currentSide === 'left' && rect.x - buffer <= 0) {
       flipSide = 'right';
     }
-    if (currentSide === 'right' && rect.x + rect.width >= viewportWidth) {
+    if (
+      currentSide === 'right' &&
+      rect.x + rect.width + buffer >= viewportWidth
+    ) {
       flipSide = 'left';
     }
+    console.log(rect.x + rect.width, viewportWidth);
 
     // If we need to flip, do it, otherwise dont do anything.
     if (flipSide) {
@@ -323,14 +335,19 @@ export class UUIOverlayElement extends LitElement {
       let alignX = 0;
       let alignY = 0;
 
+      let marginX = 0;
+      let marginY = 0;
+
       if (this.overlayPosCurrent.indexOf('top') !== -1) {
         alignY = 1;
         originY = 0;
+        marginY = this.margin;
       }
 
       if (this.overlayPosCurrent.indexOf('bot') !== -1) {
         alignY = 0;
         originY = 1;
+        marginY = this.margin;
       }
 
       if (
@@ -355,10 +372,12 @@ export class UUIOverlayElement extends LitElement {
       if (this.overlayPosCurrent.indexOf('left') !== -1) {
         alignX = 1;
         originX = 0;
+        marginX = this.margin;
       }
       if (this.overlayPosCurrent.indexOf('right') !== -1) {
         alignX = 0;
         originX = 1;
+        marginX = this.margin;
       }
 
       if (
@@ -380,12 +399,17 @@ export class UUIOverlayElement extends LitElement {
         originY = 1;
       }
 
-      const calcV =
-        -conRect.height * alignY - parentRect.height * (1 - originY);
-      const calcH = -conRect.width * alignX + parentRect.width * originX;
+      const calcX =
+        -conRect.width * alignX +
+        parentRect.width * originX -
+        marginX * (alignX * 2 - 1);
+      const calcY =
+        -conRect.height * alignY -
+        parentRect.height * (1 - originY) -
+        marginY * (alignY * 2 - 1);
 
-      rootElement.style.top = `${calcV}px`;
-      rootElement.style.left = `${calcH}px`;
+      rootElement.style.left = `${calcX}px`;
+      rootElement.style.top = `${calcY}px`;
 
       // if (
       //   this.overlayPosCurrent === 'topLeft' ||

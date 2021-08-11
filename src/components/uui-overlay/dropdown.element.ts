@@ -84,12 +84,16 @@ export class DropdownTest extends LitElement {
           .open=${this.open}
           .parent=${this.dropdown}
           .overlayPos=${this.overlayPos}
+          .margin=${12}
         >
           <div
-            style="height: 200px; width: 211.2px; padding: 10px; border-radius: 10px; border: 1px solid black; background: #ffffff;"
+            style="height: 200px; width: 211.2px; padding: 10px; border-radius: 10px; border: 1px solid black; background: white;"
           >
             I am a dropdown
             <button>jeg er en knap</button>
+            <p>lorem aksjd sadsadkas jdsald asd sad</p>
+            <img />
+            <input placeholder="I AM INPUT" />
           </div>
         </uui-overlay>
       </div>
