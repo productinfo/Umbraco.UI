@@ -2,7 +2,7 @@ import { html } from 'lit-html';
 import './index';
 
 export default {
-  title: 'Inputs/DatePicker',
+  title: 'Inputs/Date Picker',
   component: 'uui-date-picker',
 };
 
