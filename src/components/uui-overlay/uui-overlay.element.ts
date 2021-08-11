@@ -27,7 +27,8 @@ export class UUIOverlayElement extends LitElement {
       }
       #container {
         position: absolute;
-        background: #ff000038;
+        /* background color is for debugging */
+        /* background: #ff000038; */
       }
       .bot {
         bottom: 0;
@@ -112,7 +113,6 @@ export class UUIOverlayElement extends LitElement {
   intersectionCallback = (entries: IntersectionObserverEntry[]) => {
     entries.forEach(element => {
       if (!element.isIntersecting) {
-        this.setFlipSide(element.intersectionRect);
         this.updateOverlay();
       }
     });
@@ -165,6 +165,7 @@ export class UUIOverlayElement extends LitElement {
     const parentRect = this.parent!.getBoundingClientRect()!;
     const rootElement = this.rootElement!;
 
+    this.setFlipSide(conRect);
     this.staticPlacement(conRect, parentRect, rootElement);
   }
 
@@ -274,7 +275,9 @@ export class UUIOverlayElement extends LitElement {
       : '';
   }
 
-  // ------ BELOW IS NOT IN USE A THE MOMENT ------
+  // ----------------------------------------------
+  // --\/-- BELOW IS NOT IN USE A THE MOMENT --\/--
+  // ----------------------------------------------
 
   @property({ type: Boolean }) useAutoPlacement = false;
 
