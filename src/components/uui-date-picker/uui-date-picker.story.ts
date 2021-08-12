@@ -7,3 +7,6 @@ export default {
 };
 
 export const Default = () => html`<uui-date-picker></uui-date-picker> `;
+
+export const Locale = () =>
+  html`<uui-date-picker locale="pl"></uui-date-picker> `;
