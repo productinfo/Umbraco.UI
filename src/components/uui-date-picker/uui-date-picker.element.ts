@@ -4,16 +4,14 @@ import { property, query } from 'lit/decorators';
 import { pickerStyle } from './flatpicker-style';
 import { DateLimit, DateOption, Options } from 'flatpickr/dist/types/options';
 import { Instance } from 'flatpickr/dist/types/instance';
+import { LabelMixin } from '../../mixins/LabelMixin';
 /**
  *  @element uui-date-picker
  *  @description - pick a date
  */
-export class UUIDatePickerElement extends LitElement {
+export class UUIDatePickerElement extends LabelMixin('', LitElement) {
   static styles = [
     css`
-      :host {
-        display: inline-block;
-      }
       input {
         display: inline-block;
         height: 30px;
@@ -25,54 +23,60 @@ export class UUIDatePickerElement extends LitElement {
         box-sizing: border-box;
         background-color: var(
           --uui-text-field-background-color,
-          var(--uui-interface-surface)
+          var(--uui-interface-surface, #fefefe)
         );
         border: 1px solid
-          var(--uui-text-field-border-color, var(--uui-interface-border));
+          var(
+            --uui-text-field-border-color,
+            var(--uui-interface-border, #c4c4c4)
+          );
         width: 100%;
         outline: none;
       }
       input:hover {
         border-color: var(
           --uui-text-field-border-color-hover,
-          var(--uui-interface-border-hover)
+          var(--uui-interface-border-hover, rgb(179, 179, 179))
         );
       }
       input:focus {
         border-color: var(
           --uui-text-field-border-color-focus,
-          var(--uui-interface-border-focus)
+          var(--uui-interface-border-focus, rgb(179, 179, 179))
         );
-      }
-      :host([invalid]) {
-        border-color: var(--uui-color-danger-background);
-      }
-
-      input[type='color'] {
-        width: 30px;
-        padding: 0;
-        border: none;
       }
 
       input[disabled] {
         background-color: var(
           --uui-text-field-background-color-disabled,
-          var(--uui-interface-surface-disabled)
+          var(--uui-interface-surface-disabled, rgb(228, 228, 228))
         );
         border: 1px solid
           var(
             --uui-text-field-border-color-disabled,
-            var(--uui-interface-border-disable)
+            var(--uui-interface-border-disable, rgb(189, 189, 189))
           );
 
-        color: var(--uui-interface-contrast-disabled);
+        color: var(--uui-interface-contrast-disabled, rgb(115, 113, 110));
+      }
+
+      .label {
+        font-size: var(--uui-type-small-size, 12px);
+        color: var(--uui-interface-contrast, #060606);
+      }
+
+      :host([disabled]) .label {
+        color: var(--uui-interface-contrast-disabled, #73716e);
       }
     `,
     pickerStyle,
   ];
 
-  // @property()
-  // locale: key | '' = '';
+  @property({ attribute: false })
+  date: Date[] | null = null;
+
+  @property({ type: Boolean, reflect: true })
+  disabled = false;
 
   @property({ type: String })
   placeholder = '';
@@ -321,6 +325,15 @@ export class UUIDatePickerElement extends LitElement {
     return options;
   }
 
+  @query('#picker-parent')
+  pickerParent?: HTMLElement;
+
+  @query('#picker-input')
+  pickerInput?: HTMLInputElement;
+
+  @query('.flatpickr-monthDropdown-months')
+  pickerMonthSelect?: HTMLSelectElement;
+
   //! DOES NOT WORK
   // private async getLocale() {
   //   if (this.locale !== '') {
@@ -338,37 +351,39 @@ export class UUIDatePickerElement extends LitElement {
       }
     }
 
-    if (this.pickerInput)
+    if (this.pickerInput && this.pickerParent)
       this._pickerInstance = flatpickr(this.pickerInput, {
         appendTo: this.pickerParent,
-        positionElement: this.pickerParent,
+        positionElement: this,
         onChange: this.setDate,
         ...this.getOptions(),
       });
-  }
 
-  connectedCallback() {
-    super.connectedCallback();
+    //this.pickerMonthSelect?.removeAttribute('tabindex');
   }
 
   updated() {
     this.initializePicker();
   }
 
-  private setDate(selectedDates: Date[], dateStr: string, instance: any) {
-    console.log(selectedDates, dateStr, instance);
+  private setDate(selectedDates: Date[], dateStr: string, instance: Instance) {
+    this.date = selectedDates;
+    console.log(this.date);
     if (this.pickerInput) this.pickerInput.value = dateStr;
   }
 
-  @query('#picker-parent')
-  pickerParent: any;
-
-  @query('#picker-input')
-  pickerInput?: HTMLInputElement;
-
   render() {
-    return html`<div id="picker-parent">
-      <input id="picker-input" type="text" paleceholder=${this.placeholder} />
-    </div>`;
+    return html`
+      <label id="picker-parent">
+        <input
+          id="picker-input"
+          type="text"
+          placeholder=${this.placeholder}
+          aria-label=${this.label}
+          ?disabled=${this.disabled}
+        />
+        ${this.renderLabel()}
+      </label>
+    `;
   }
 }

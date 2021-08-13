@@ -8,12 +8,17 @@ export default {
 
 export const Default = () => html`<uui-date-picker></uui-date-picker> `;
 
-export const PositionTest = () =>
-  html`<div
-    style="width: 100%; height:100vh; display: grid; place-items: end end"
-  >
-    <uui-date-picker></uui-date-picker>
-  </div> `;
+export const Labeled = () =>
+  html`<uui-date-picker label="Birthday"></uui-date-picker>`;
+
+export const Disabled = () =>
+  html`<uui-date-picker label="Birthday" disabled></uui-date-picker>`;
+
+export const Range = () =>
+  html`<uui-date-picker label="Birthday" mode="range"></uui-date-picker>`;
+
+export const Multiple = () =>
+  html`<uui-date-picker label="Birthday" mode="multiple"></uui-date-picker>`;
 
 export const AltFormat = () =>
   html`<uui-date-picker
