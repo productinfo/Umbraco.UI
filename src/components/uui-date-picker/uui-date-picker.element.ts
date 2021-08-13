@@ -5,9 +5,11 @@ import { pickerStyle } from './flatpicker-style';
 import { DateLimit, DateOption, Options } from 'flatpickr/dist/types/options';
 import { Instance } from 'flatpickr/dist/types/instance';
 import { LabelMixin } from '../../mixins/LabelMixin';
+import { UUIDatePickerEvent } from './UUIDatePickerEvents';
 /**
  *  @element uui-date-picker
  *  @description - pick a date
+ * @fires change - when the date/dates are changed
  */
 export class UUIDatePickerElement extends LabelMixin('', LitElement) {
   static styles = [
@@ -370,6 +372,7 @@ export class UUIDatePickerElement extends LabelMixin('', LitElement) {
     this.date = selectedDates;
     console.log(this.date);
     if (this.pickerInput) this.pickerInput.value = dateStr;
+    this.dispatchEvent(new UUIDatePickerEvent(UUIDatePickerEvent.CHANGE));
   }
 
   render() {
