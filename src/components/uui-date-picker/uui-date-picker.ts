@@ -2,13 +2,7 @@ import { LitElement, html, css } from 'lit';
 import flatpickr from 'flatpickr';
 import { property, query } from 'lit/decorators';
 import { pickerStyle } from './flatpicker-style';
-import {
-  DateLimit,
-  DateOption,
-  Hook,
-  Options,
-} from 'flatpickr/dist/types/options';
-import { key, Locale } from 'flatpickr/dist/types/locale';
+import { DateLimit, DateOption, Options } from 'flatpickr/dist/types/options';
 import { Instance } from 'flatpickr/dist/types/instance';
 /**
  *  @element uui-date-picker
@@ -175,15 +169,6 @@ export class UUIDatePickerElement extends LitElement {
   disable: DateLimit<DateOption>[] = [];
 
   /**
-   * Set disableMobile to true to always use the non-native picker.
-   * By default, flatpickr utilizes native datetime widgets unless certain options (e.g. disable) are used.
-   * @prop
-   * @type boolean
-   * */
-  // @property({ type: Boolean })
-  // disableMobile = false;
-
-  /**
    * Dates selected to be available for selection.
    * @prop
    * @type DateLimit<DateOption>[]
@@ -208,18 +193,6 @@ export class UUIDatePickerElement extends LitElement {
   enableSeconds = false;
 
   /**
-   * Allows using a custom date formatting function instead of the built-in
-   * handling for date formats using dateFormat, altFormat, etc.
-   *
-   * Function format: (date: Date, format: string, locale: Locale) => string
-   *
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // formatDateFn?: (date: Date, format: string, locale: Locale) => string;
-
-  /**
    * Adjusts the step for the hour input (incl. scrolling)
    * @prop
    * @type number
@@ -234,14 +207,6 @@ export class UUIDatePickerElement extends LitElement {
    * */
   @property({ type: Number })
   minuteIncrement = 5;
-
-  /**
-   * Displays the calendar inline
-   * @prop
-   * @type boolean
-   * */
-  // @property({ type: Boolean })
-  // inline = false;
 
   /**
    * The maximum date that a user can pick to (inclusive).
@@ -268,22 +233,6 @@ export class UUIDatePickerElement extends LitElement {
   mode: 'single' | 'multiple' | 'range' | 'time' = 'single';
 
   /**
-   * HTML for the arrow icon, used to switch months.
-   * @prop
-   * @type string
-   * */
-  // @property({ type: String })
-  // nextArrow = '>';
-
-  /**
-   * HTML for the arrow icon, used to switch months.
-   * @prop
-   * @type string
-   * */
-  // @property({ type: String })
-  // prevArrow = '<';
-
-  /**
    * Hides the day selection in calendar.
    * Use it along with enableTime to create a time picker.
    * @prop
@@ -293,103 +242,12 @@ export class UUIDatePickerElement extends LitElement {
   noCalendar = false;
 
   /**
-   * Function(s) to trigger on every date selection
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onChange?: Hook;
-
-  /**
-   * Function(s) to trigger every time the calendar is closed
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onClose?: Hook;
-
-  /**
-   * Function(s) to trigger every time the calendar is opened
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onOpen?: Hook;
-
-  /**
-   * Function(s) to trigger when the calendar is ready
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onReady?: Hook;
-
-  /**
-   * Function(s) to trigger every time the calendar month is changed by the user or programmatically
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onMonthChange?: Hook;
-
-  /**
-   * Function(s) to trigger every time the calendar year is changed by the user or programmatically
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onYearChange?: Hook;
-
-  /**
-   * Function(s) to trigger when the input value is updated with a new date string
-   * @prop
-   * @type Function
-   * */
-  // @property({ type: Object, attribute: false })
-  // onValueUpdate?: Hook;
-
-  /**
-   * Function that expects a date string and must return a Date object.
-   *
-   * Function format: (date: string, format: string) => string
-   *
-   * @prop
-   * @type Function
-   **/
-  // @property({ type: Object, attribute: false })
-  // parseDateFn?: (date: string, format: string) => Date;
-
-  /**
    * Where the calendar is rendered relative to the input
    * @prop
    * @type {"auto" | "above" | "below"}
    * */
   @property({ type: String })
   position: 'auto' | 'above' | 'below' = 'auto';
-
-  /**
-   * Show the month using the shorthand version (ie, Sep instead of September)
-   * @prop
-   * @type boolean
-   * */
-  // @property({ type: Boolean })
-  // shorthandCurrentMonth = false;
-
-  /**
-   * The number of months showed
-   * @prop
-   * @type number
-   * */
-  // @property({ type: Number })
-  // showMonths = 1;
-
-  /**
-   * Position the calendar inside the wrapper and next to the input element
-   * @prop
-   * @type boolean
-   **/
-  // @property({ type: Boolean })
-  // static = false;
 
   /**
    * Displays the time picker in 24 hour mode without AM/PM selection when enabled
@@ -406,23 +264,6 @@ export class UUIDatePickerElement extends LitElement {
    * */
   @property({ type: Boolean })
   weekNumbers = false;
-
-  /**
-   * flatpickr can parse an input group of textboxes and buttons, common in Bootstrap and other frameworks.
-   * This permits additional markup, as well as custom elements to trigger the state of the calendar.
-   * @prop
-   * @type boolean
-   * */
-  // @property({ type: Boolean })
-  // wrap = false;
-
-  /**
-   * The set theme of flatpickr.
-   * @prop
-   * @type { "light" | "dark" | "material_blue" | "material_red" | "material_green" | "material_orange" | "airbnb" | "confetti" | "none" }
-   * */
-  // @property({ type: String })
-  // theme = 'light';
 
   private _pickerInstance?: Instance;
 
