@@ -1,5 +1,6 @@
 import { property, query, state } from 'lit/decorators';
 import { LitElement, html, css } from 'lit';
+import { UUIOverlayEvent } from './UUIOverlayEvent';
 
 export type OverlayPosition =
   | 'topLeft'
@@ -27,42 +28,29 @@ export class UUIOverlayElement extends LitElement {
       }
       #container {
         position: absolute;
-        /* background color is for debugging */
-        /* background: #ff000038; */
       }
-      .bot {
-        bottom: 0;
-      }
-      .top {
-        top: 0;
-      }
-      .left {
-        left: 0;
-      }
-      .right {
-        right: 0;
+      #root,
+      #parent {
+        position: relative;
       }
     `,
   ];
 
-  @state() _open = false;
-  @state() _overlayPosWant: OverlayPosition = 'botLeft';
-  @state() overlayPosCurrent: OverlayPosition = this._overlayPosWant;
-  @state() rootElement?: HTMLElement;
-  @state() top = false;
-  @state() intersectionObserver?: IntersectionObserver;
-
   @query('#container') containerElement?: HTMLElement;
 
+  @state() _open = false;
+  @state() _overlayPos: OverlayPosition = 'botLeft';
+
+  @property({ type: Boolean, attribute: 'use-clamp' }) useClamp = false;
+  @property({ type: Boolean, attribute: 'use-auto-placement' })
+  useAutoPlacement = false;
   @property({ type: Number }) margin = 0;
-  @property({ type: Object }) parent?: Element;
   @property({ type: String })
   get overlayPos() {
-    return this._overlayPosWant;
+    return this._overlayPos;
   }
   set overlayPos(newValue) {
-    this._overlayPosWant = newValue;
-    this.overlayPosCurrent = newValue;
+    this._overlayPos = newValue;
     this.updateOverlay();
   }
   @property({ type: Boolean })
@@ -71,31 +59,62 @@ export class UUIOverlayElement extends LitElement {
   }
   set open(newValue) {
     this._open = newValue;
-    newValue ? this.initOverlay() : this.closeOverlay();
+    newValue ? this.openOverlay() : this.closeOverlay();
   }
+
+  // Cashed non-state variables //////////////////////////////
+  intersectionObserver?: IntersectionObserver;
+  rootElement?: HTMLElement;
+  parent?: Element;
+
+  documentClickEventHandler = this.onDocumentClick.bind(this);
+  scrollEventHandler = this.updateOverlay.bind(this);
+  scrollTimeout: any;
+
+  conRect = this.containerElement?.getBoundingClientRect()!;
+  parentRect = this.parent!.getBoundingClientRect()!;
+  ////////////////////////////////////////////////////////////
 
   firstUpdated() {
     this.rootElement = this.shadowRoot?.host as HTMLElement;
+
+    const slot = this.shadowRoot!.querySelector('slot');
+    const childNodes = slot!.assignedNodes({ flatten: true });
+    this.parent = childNodes[0] as HTMLElement;
   }
 
-  initOverlay() {
-    if (this.rootElement) {
-      //Reset Styling
-      this.rootElement.style.opacity = '0';
+  disconnectedCallback() {
+    document.addEventListener('click', this.documentClickEventHandler);
+    document.removeEventListener('scroll', this.scrollEventHandler);
+    this.intersectionObserver?.disconnect();
+  }
+
+  openOverlay() {
+    if (this.containerElement) {
+      this.containerElement!.style.opacity = '0';
+      document.addEventListener('click', this.documentClickEventHandler);
 
       setTimeout(() => {
         this.updateOverlay();
-        this.createOberserver();
-        this.rootElement!.style.opacity = '1';
+        this.createIntersectionObserver();
+        this.containerElement!.style.opacity = '1';
       }, 0);
     }
   }
 
   closeOverlay() {
     this.intersectionObserver?.disconnect();
+    document.removeEventListener('click', this.documentClickEventHandler);
   }
 
-  createOberserver() {
+  // Use this when changing the open state from within this component.
+  forceCloseOverlay() {
+    this.open = false;
+    // Notifies parent about changes.
+    this.dispatchEvent(new UUIOverlayEvent(UUIOverlayEvent.CHANGE));
+  }
+
+  createIntersectionObserver() {
     const options = {
       root: null,
       rootMargin: '0px',
@@ -113,13 +132,33 @@ export class UUIOverlayElement extends LitElement {
   intersectionCallback = (entries: IntersectionObserverEntry[]) => {
     entries.forEach(element => {
       if (!element.isIntersecting) {
-        this.updateOverlay();
+        document.addEventListener('scroll', this.scrollEventHandler);
+      } else {
+        clearTimeout(this.scrollTimeout);
+        this.scrollTimeout = setTimeout(() => {
+          document.removeEventListener('scroll', this.scrollEventHandler);
+        }, 1000);
       }
     });
   };
 
-  setFlipSide(rect: DOMRectReadOnly) {
-    const sideSplit = this.overlayPosCurrent.split(/(?=[A-Z])/);
+  // Close when clicking outside overlay
+  onDocumentClick(event: Event) {
+    if (!event.composedPath().includes(this)) {
+      this.forceCloseOverlay();
+    }
+  }
+
+  updateOverlay() {
+    if (this.shadowRoot) {
+      this.updateOverlayPos();
+      this.updateOverlayPlacement();
+    }
+  }
+
+  updateOverlayPos() {
+    const rect = this.conRect;
+    const sideSplit = this._overlayPos.split(/(?=[A-Z])/);
     const currentSide = sideSplit[0];
     const sideSuffix = sideSplit[1] || 'Center';
     const viewportHeight = document.documentElement.clientHeight;
@@ -148,37 +187,35 @@ export class UUIOverlayElement extends LitElement {
     ) {
       flipSide = 'left';
     }
-    console.log(rect.x + rect.width, viewportWidth);
 
     // If we need to flip, do it, otherwise dont do anything.
     if (flipSide) {
-      this.overlayPosCurrent = (flipSide + sideSuffix) as OverlayPosition;
+      this._overlayPos = (flipSide + sideSuffix) as OverlayPosition;
     }
   }
 
-  updateOverlay() {
-    if (!this.shadowRoot) {
-      return;
-    }
-    // TODO: These 3 should propably be cashed.
-    const conRect = this.containerElement?.getBoundingClientRect()!;
-    const parentRect = this.parent!.getBoundingClientRect()!;
-    const rootElement = this.rootElement!;
+  updateOverlayPlacement() {
+    const conRect = this.conRect;
+    const parentRect = this.parentRect;
+    const containerElement = this.containerElement!;
 
-    this.setFlipSide(conRect);
-    this.staticPlacement(conRect, parentRect, rootElement);
-  }
+    if (parentRect != null && conRect != null && containerElement != null) {
+      containerElement.style.top = '';
+      containerElement.style.bottom = '';
+      containerElement.style.left = '';
+      containerElement.style.right = '';
 
-  staticPlacement(
-    conRect: DOMRect,
-    parentRect: DOMRect,
-    rootElement: HTMLElement
-  ) {
-    if (parentRect != null && conRect != null && rootElement != null) {
-      rootElement.style.top = '';
-      rootElement.style.bottom = '';
-      rootElement.style.left = '';
-      rootElement.style.right = '';
+      const isTopHorizontal = this._overlayPos.indexOf('top') !== -1;
+      const isBotHorizontal = this._overlayPos.indexOf('bot') !== -1;
+      const isLeftHorizontal = this._overlayPos.indexOf('Left') !== -1;
+      const isRightHorizontal = this._overlayPos.indexOf('Right') !== -1;
+      const isTopVertical = this._overlayPos.indexOf('Top') !== -1;
+      const isBotVertical = this._overlayPos.indexOf('Bot') !== -1;
+      const isLeftVertical = this._overlayPos.indexOf('left') !== -1;
+      const isRightVertical = this._overlayPos.indexOf('right') !== -1;
+      const isCenter = this._overlayPos.indexOf('Center') !== -1;
+
+      // -------- | INITIATE MATH | --------
 
       let originX = 0;
       let originY = 0;
@@ -189,64 +226,58 @@ export class UUIOverlayElement extends LitElement {
       let marginY = 0;
 
       // -------- TOP / BOT --------
-      if (this.overlayPosCurrent.indexOf('top') !== -1) {
+      if (isTopHorizontal) {
         alignY = 1;
         originY = 0;
         marginY = this.margin;
       }
 
-      if (this.overlayPosCurrent.indexOf('bot') !== -1) {
+      if (isBotHorizontal) {
         alignY = 0;
         originY = 1;
         marginY = this.margin;
       }
 
-      if (
-        this.overlayPosCurrent.indexOf('top') !== -1 ||
-        this.overlayPosCurrent.indexOf('bot') !== -1
-      ) {
-        if (this.overlayPosCurrent.indexOf('Center') !== -1) {
+      if (isTopHorizontal || isBotHorizontal) {
+        if (isCenter) {
           alignX = 0.5;
           originX = 0.5;
         }
       }
 
-      if (this.overlayPosCurrent.indexOf('Left') !== -1) {
+      if (isLeftHorizontal) {
         alignX = 0;
         originX = 0;
       }
-      if (this.overlayPosCurrent.indexOf('Right') !== -1) {
+      if (isRightHorizontal) {
         alignX = 1;
         originX = 1;
       }
 
       // -------- LEFT / RIGHT --------
-      if (this.overlayPosCurrent.indexOf('left') !== -1) {
+      if (isLeftVertical) {
         alignX = 1;
         originX = 0;
         marginX = this.margin;
       }
-      if (this.overlayPosCurrent.indexOf('right') !== -1) {
+      if (isRightVertical) {
         alignX = 0;
         originX = 1;
         marginX = this.margin;
       }
 
-      if (
-        this.overlayPosCurrent.indexOf('left') !== -1 ||
-        this.overlayPosCurrent.indexOf('right') !== -1
-      ) {
-        if (this.overlayPosCurrent.indexOf('Center') !== -1) {
+      if (isLeftVertical || isRightVertical) {
+        if (isCenter) {
           alignY = 0.5;
           originY = 0.5;
         }
       }
 
-      if (this.overlayPosCurrent.indexOf('Top') !== -1) {
+      if (isTopVertical) {
         alignY = 0;
         originY = 0;
       }
-      if (this.overlayPosCurrent.indexOf('Bot') !== -1) {
+      if (isBotVertical) {
         alignY = 1;
         originY = 1;
       }
@@ -256,30 +287,57 @@ export class UUIOverlayElement extends LitElement {
         parentRect.width * originX -
         marginX * (alignX * 2 - 1);
       const calcY =
-        -conRect.height * alignY -
-        parentRect.height * (1 - originY) -
+        -conRect.height * alignY +
+        parentRect.height * originY -
         marginY * (alignY * 2 - 1);
 
-      rootElement.style.left = `${calcX}px`;
-      rootElement.style.top = `${calcY}px`;
+      let clampXFinal = calcX;
+      let clampYFinal = calcY;
+
+      // Clamps the overlay to the screen as long as parent is on screen
+      if (this.useClamp) {
+        // Only do this clamp if overlay is on the top or bottom of the parent.
+        if (isTopHorizontal || isBotHorizontal) {
+          const leftClamp = -parentRect.x;
+          const rightClamp =
+            document.documentElement.clientWidth -
+            parentRect.x -
+            parentRect.width +
+            calcX -
+            (conRect.width - parentRect.width) * (1 - originX);
+
+          const clampX = this.mathClamp(calcX, leftClamp, rightClamp);
+          clampXFinal = this.mathClamp(
+            clampX,
+            -conRect.width,
+            parentRect.width
+          );
+        }
+
+        if (isLeftVertical || isRightVertical) {
+          // Only do this clamp if overlay is on the sides of the parent.
+          const topClamp = -parentRect.y;
+          const bottomClamp =
+            document.documentElement.clientHeight -
+            parentRect.y -
+            parentRect.height +
+            calcY -
+            (conRect.height - parentRect.height) * (1 - originY);
+
+          const clampY = this.mathClamp(calcY, topClamp, bottomClamp);
+          clampYFinal = this.mathClamp(
+            clampY,
+            -conRect.height,
+            parentRect.height
+          );
+        }
+      }
+
+      // apply the positions as styling
+      containerElement.style.left = `${clampXFinal}px`;
+      containerElement.style.top = `${clampYFinal}px`;
     }
   }
-
-  render() {
-    return this.open
-      ? html`
-          <div id="container">
-            <slot></slot>
-          </div>
-        `
-      : '';
-  }
-
-  // ----------------------------------------------
-  // --\/-- BELOW IS NOT IN USE A THE MOMENT --\/--
-  // ----------------------------------------------
-
-  @property({ type: Boolean }) useAutoPlacement = false;
 
   mathClamp(value: number, min: number, max: number) {
     if (value < min) {
@@ -289,6 +347,21 @@ export class UUIOverlayElement extends LitElement {
     }
     return value;
   }
+
+  render() {
+    return html`
+      <div id="root">
+        <slot id="parent" name="parent"></slot>
+        <div id="container">
+          ${this.open ? html`<slot name="overlay"></slot>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // ----------------------------------------------
+  // --\/-- BELOW IS NOT IN USE A THE MOMENT --\/--
+  // ----------------------------------------------
 
   autoPlacement(
     conRect: DOMRect,
