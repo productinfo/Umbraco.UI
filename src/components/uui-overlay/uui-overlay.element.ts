@@ -40,6 +40,7 @@ export class UUIOverlayElement extends LitElement {
 
   @state() _open = false;
   @state() _overlayPos: OverlayPosition = 'botLeft';
+  @state() parent?: Element;
 
   @property({ type: Boolean, attribute: 'use-clamp' }) useClamp = false;
   @property({ type: Boolean, attribute: 'use-auto-placement' })
@@ -64,20 +65,12 @@ export class UUIOverlayElement extends LitElement {
 
   // Cashed non-state variables //////////////////////////////
   intersectionObserver?: IntersectionObserver;
-  rootElement?: HTMLElement;
-  parent?: Element;
-
   documentClickEventHandler = this.onDocumentClick.bind(this);
   scrollEventHandler = this.updateOverlay.bind(this);
   scrollTimeout: any;
-
-  conRect = this.containerElement?.getBoundingClientRect()!;
-  parentRect = this.parent!.getBoundingClientRect()!;
   ////////////////////////////////////////////////////////////
 
   firstUpdated() {
-    this.rootElement = this.shadowRoot?.host as HTMLElement;
-
     const slot = this.shadowRoot!.querySelector('slot');
     const childNodes = slot!.assignedNodes({ flatten: true });
     this.parent = childNodes[0] as HTMLElement;
@@ -151,13 +144,17 @@ export class UUIOverlayElement extends LitElement {
 
   updateOverlay() {
     if (this.shadowRoot) {
-      this.updateOverlayPos();
-      this.updateOverlayPlacement();
+      const conRect = this.containerElement?.getBoundingClientRect()!;
+      const parentRect = this.parent!.getBoundingClientRect()!;
+      const containerElement = this.containerElement!;
+
+      // this.updateOverlayPos(conRect);
+      // this.updateOverlayPlacement(conRect, parentRect, containerElement);
+      this.autoPlacement(conRect, parentRect, containerElement);
     }
   }
 
-  updateOverlayPos() {
-    const rect = this.conRect;
+  updateOverlayPos(rect: DOMRect) {
     const sideSplit = this._overlayPos.split(/(?=[A-Z])/);
     const currentSide = sideSplit[0];
     const sideSuffix = sideSplit[1] || 'Center';
@@ -194,11 +191,11 @@ export class UUIOverlayElement extends LitElement {
     }
   }
 
-  updateOverlayPlacement() {
-    const conRect = this.conRect;
-    const parentRect = this.parentRect;
-    const containerElement = this.containerElement!;
-
+  updateOverlayPlacement(
+    conRect: DOMRect,
+    parentRect: DOMRect,
+    containerElement: HTMLElement
+  ) {
     if (parentRect != null && conRect != null && containerElement != null) {
       containerElement.style.top = '';
       containerElement.style.bottom = '';
@@ -366,7 +363,7 @@ export class UUIOverlayElement extends LitElement {
   autoPlacement(
     conRect: DOMRect,
     parentRect: DOMRect,
-    rootElement: HTMLElement
+    containerElement: HTMLElement
   ) {
     if (this.open) {
       // For Convience and readability
@@ -440,8 +437,8 @@ export class UUIOverlayElement extends LitElement {
         : posYFinal;
 
       // Apply the positions as styling
-      rootElement.style.top = `${posYActualFinal}px`;
-      rootElement.style.left = `${posXFinal}px`;
+      containerElement.style.top = `${posYActualFinal}px`;
+      containerElement.style.left = `${posXFinal}px`;
     }
   }
 
