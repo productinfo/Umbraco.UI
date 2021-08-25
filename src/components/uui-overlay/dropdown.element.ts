@@ -94,6 +94,7 @@ export class DropdownTest extends LitElement {
           .overlayPos=${this.overlayPos}
           .margin=${8}
           use-clamp
+          use-auto-placement
           @change=${(e: UUIOverlayEvent) => (this.open = e.target.open)}
         >
           ${this.renderParent()} ${this.renderContent()}

@@ -36,6 +36,13 @@ export class UUIOverlayElement extends LitElement {
     `,
   ];
 
+  // Cashed non-state variables //////////////////////////////
+  intersectionObserver?: IntersectionObserver;
+  documentClickEventHandler = this.onDocumentClick.bind(this);
+  scrollEventHandler = this.updateOverlay.bind(this);
+  scrollTimeout: any;
+  ////////////////////////////////////////////////////////////
+
   @query('#container') containerElement?: HTMLElement;
 
   @state() _open = false;
@@ -62,13 +69,6 @@ export class UUIOverlayElement extends LitElement {
     this._open = newValue;
     newValue ? this.openOverlay() : this.closeOverlay();
   }
-
-  // Cashed non-state variables //////////////////////////////
-  intersectionObserver?: IntersectionObserver;
-  documentClickEventHandler = this.onDocumentClick.bind(this);
-  scrollEventHandler = this.updateOverlay.bind(this);
-  scrollTimeout: any;
-  ////////////////////////////////////////////////////////////
 
   firstUpdated() {
     const slot = this.shadowRoot!.querySelector('slot');
@@ -148,9 +148,7 @@ export class UUIOverlayElement extends LitElement {
       const parentRect = this.parent!.getBoundingClientRect()!;
       const containerElement = this.containerElement!;
 
-      // this.updateOverlayPos(conRect);
-      // this.updateOverlayPlacement(conRect, parentRect, containerElement);
-      this.autoPlacement(conRect, parentRect, containerElement);
+      this.updateOverlayPlacement(conRect, parentRect, containerElement);
     }
   }
 
@@ -213,7 +211,6 @@ export class UUIOverlayElement extends LitElement {
       const isCenter = this._overlayPos.indexOf('Center') !== -1;
 
       // -------- | INITIATE MATH | --------
-
       let originX = 0;
       let originY = 0;
       let alignX = 0;
@@ -222,61 +219,89 @@ export class UUIOverlayElement extends LitElement {
       let marginX = 0;
       let marginY = 0;
 
-      // -------- TOP / BOT --------
-      if (isTopHorizontal) {
-        alignY = 1;
-        originY = 0;
-        marginY = this.margin;
-      }
+      if (this.useAutoPlacement) {
+        const halfWindowX = window.innerWidth / 2;
+        const halfWindowY = window.innerHeight / 2;
 
-      if (isBotHorizontal) {
-        alignY = 0;
-        originY = 1;
-        marginY = this.margin;
-      }
+        const dirX = this.mathClamp(
+          this.mathMap(halfWindowX - parentRect.x, 0, parentRect.width, 0, 1),
+          0,
+          1
+        );
+        let dirY = this.mathClamp(
+          this.mathMap(halfWindowY - parentRect.y, 0, parentRect.height, 0, 1),
+          0,
+          1
+        );
 
-      if (isTopHorizontal || isBotHorizontal) {
-        if (isCenter) {
-          alignX = 0.5;
-          originX = 0.5;
+        if (dirX > 0 && dirX < 1) {
+          dirY = Math.round(dirY);
         }
-      }
 
-      if (isLeftHorizontal) {
-        alignX = 0;
-        originX = 0;
-      }
-      if (isRightHorizontal) {
-        alignX = 1;
-        originX = 1;
-      }
-
-      // -------- LEFT / RIGHT --------
-      if (isLeftVertical) {
-        alignX = 1;
-        originX = 0;
+        originX = dirX;
+        originY = dirY;
+        alignX = 1 - dirX;
+        alignY = 1 - dirY;
         marginX = this.margin;
-      }
-      if (isRightVertical) {
-        alignX = 0;
-        originX = 1;
-        marginX = this.margin;
-      }
-
-      if (isLeftVertical || isRightVertical) {
-        if (isCenter) {
-          alignY = 0.5;
-          originY = 0.5;
+        marginY = this.margin;
+      } else {
+        this.updateOverlayPos(conRect);
+        // -------- TOP / BOT --------
+        if (isTopHorizontal) {
+          alignY = 1;
+          originY = 0;
+          marginY = this.margin;
         }
-      }
 
-      if (isTopVertical) {
-        alignY = 0;
-        originY = 0;
-      }
-      if (isBotVertical) {
-        alignY = 1;
-        originY = 1;
+        if (isBotHorizontal) {
+          alignY = 0;
+          originY = 1;
+          marginY = this.margin;
+        }
+
+        if (isTopHorizontal || isBotHorizontal) {
+          if (isCenter) {
+            alignX = 0.5;
+            originX = 0.5;
+          }
+        }
+
+        if (isLeftHorizontal) {
+          alignX = 0;
+          originX = 0;
+        }
+        if (isRightHorizontal) {
+          alignX = 1;
+          originX = 1;
+        }
+
+        // -------- LEFT / RIGHT --------
+        if (isLeftVertical) {
+          alignX = 1;
+          originX = 0;
+          marginX = this.margin;
+        }
+        if (isRightVertical) {
+          alignX = 0;
+          originX = 1;
+          marginX = this.margin;
+        }
+
+        if (isLeftVertical || isRightVertical) {
+          if (isCenter) {
+            alignY = 0.5;
+            originY = 0.5;
+          }
+        }
+
+        if (isTopVertical) {
+          alignY = 0;
+          originY = 0;
+        }
+        if (isBotVertical) {
+          alignY = 1;
+          originY = 1;
+        }
       }
 
       const calcX =
@@ -291,8 +316,9 @@ export class UUIOverlayElement extends LitElement {
       let clampXFinal = calcX;
       let clampYFinal = calcY;
 
+      // IF Useclamp and not using autoplacement
       // Clamps the overlay to the screen as long as parent is on screen
-      if (this.useClamp) {
+      if (this.useClamp && !this.useAutoPlacement) {
         // Only do this clamp if overlay is on the top or bottom of the parent.
         if (isTopHorizontal || isBotHorizontal) {
           const leftClamp = -parentRect.x;
@@ -330,19 +356,11 @@ export class UUIOverlayElement extends LitElement {
         }
       }
 
+      console.log(marginX, marginY);
       // apply the positions as styling
       containerElement.style.left = `${clampXFinal}px`;
       containerElement.style.top = `${clampYFinal}px`;
     }
-  }
-
-  mathClamp(value: number, min: number, max: number) {
-    if (value < min) {
-      return min;
-    } else if (value > max) {
-      return max;
-    }
-    return value;
   }
 
   render() {
@@ -356,213 +374,17 @@ export class UUIOverlayElement extends LitElement {
     `;
   }
 
-  // ----------------------------------------------
-  // --\/-- BELOW IS NOT IN USE A THE MOMENT --\/--
-  // ----------------------------------------------
-
-  autoPlacement(
-    conRect: DOMRect,
-    parentRect: DOMRect,
-    containerElement: HTMLElement
-  ) {
-    if (this.open) {
-      // For Convience and readability
-      const halfWindowX = window.innerWidth / 2;
-      const halfWindowY = window.innerHeight / 2;
-      const halfConX = conRect.width / 2;
-      const halfConY = conRect.height / 2;
-      const halfParentX = parentRect.width / 2;
-      const halfParentY = parentRect.height / 2;
-
-      const centerToParentX = halfWindowX - parentRect.x;
-      const centerToParentY = halfWindowY - parentRect.y;
-
-      // Is the center of the screen within the X or Y axis of the component?
-      const isInCenterX =
-        centerToParentX > 0 - halfConX &&
-        centerToParentX < parentRect.width + halfConX;
-      const isInCenterY =
-        centerToParentY > 0 - halfConY &&
-        centerToParentY < parentRect.height + halfConY;
-
-      // Detect which side of the center the parent element is on, on both axes.
-      const posXFlip = parentRect.x + halfParentX - halfWindowX < 0;
-      const posYFlip = parentRect.y + halfParentY - halfWindowY < 0;
-
-      // Flip the target left/right and top/down based on the position of the parent element relative to the screen center
-      const posXInput = posXFlip ? window.innerWidth : 0;
-      const posYInput = posYFlip ? window.innerHeight : 0;
-
-      // Clamp the overlay container to the edges of the parent element.
-      const posX = this.mathClamp(
-        posXInput,
-        parentRect.x - conRect.width,
-        parentRect.x + parentRect.width
-      );
-      const posY = this.mathClamp(
-        posYInput,
-        parentRect.y - conRect.height,
-        parentRect.y + parentRect.height
-      );
-
-      // Clamp the overlay to the screen so that it "always" stays inside:
-      const posXClamp = this.mathClamp(
-        posX,
-        0,
-        window.innerWidth - conRect.width
-      );
-      const posYClamp = this.mathClamp(
-        posY,
-        0,
-        window.innerHeight - conRect.height
-      );
-
-      // Make the overlay container glide along the edges of the parent.
-      const posXFinal = isInCenterX
-        ? centerToParentX + parentRect.x - halfConX
-        : posXClamp;
-      const posYFinal = isInCenterY
-        ? centerToParentY + parentRect.y - halfConY
-        : posYClamp;
-
-      // Make sure the overlay container doesn't overlap the parent and that it stays on screen.
-      const posYActualFinal = isInCenterX
-        ? this.mathClamp(
-            centerToParentY - halfParentY < 0
-              ? parentRect.y - conRect.height
-              : parentRect.y + parentRect.height,
-            0,
-            window.innerHeight - conRect.height
-          )
-        : posYFinal;
-
-      // Apply the positions as styling
-      containerElement.style.top = `${posYActualFinal}px`;
-      containerElement.style.left = `${posXFinal}px`;
+  // ------------------- Math extensions ---------------------
+  mathClamp(value: number, min: number, max: number) {
+    if (value < min) {
+      return min;
+    } else if (value > max) {
+      return max;
     }
+    return value;
   }
 
-  detectIfOutsideScreen(conRect: DOMRect, parentRect: DOMRect): boolean {
-    let isOutsideScreen = false;
-
-    if (
-      this.overlayPos === 'leftTop' ||
-      this.overlayPos === 'leftCenter' ||
-      this.overlayPos === 'leftBot'
-    ) {
-      let outTop = false;
-      let outBot = false;
-      const outRight = window.innerWidth - parentRect.x < 0;
-      const outLeft = parentRect.x - conRect.width < 0;
-
-      if (this.overlayPos === 'leftTop') {
-        outTop = parentRect.y < 0;
-        outBot = window.innerHeight - (parentRect.y + conRect.height) < 0;
-      }
-      if (this.overlayPos === 'leftCenter') {
-        outTop =
-          parentRect.y + (parentRect.height / 2 - conRect.height / 2) < 0;
-        outBot =
-          window.innerHeight -
-            (parentRect.y + (parentRect.height / 2 + conRect.height / 2)) <
-          0;
-      }
-      if (this.overlayPos === 'leftBot') {
-        outTop = parentRect.y + (parentRect.height - conRect.height) < 0;
-        outBot = window.innerHeight - (parentRect.y + parentRect.height) < 0;
-      }
-      isOutsideScreen = outRight || outLeft || outTop || outBot;
-    }
-
-    if (
-      this.overlayPos === 'rightTop' ||
-      this.overlayPos === 'rightCenter' ||
-      this.overlayPos === 'rightBot'
-    ) {
-      let outTop = false;
-      let outBot = false;
-      const outRight =
-        window.innerWidth - (parentRect.x + parentRect.width + conRect.width) <
-        0;
-      const outLeft = parentRect.x + parentRect.width < 0;
-
-      if (this.overlayPos === 'rightTop') {
-        outTop = parentRect.y < 0;
-        outBot = window.innerHeight - (parentRect.y + conRect.height) < 0;
-      }
-      if (this.overlayPos === 'rightCenter') {
-        outTop =
-          parentRect.y + (parentRect.height / 2 - conRect.height / 2) < 0;
-        outBot =
-          window.innerHeight -
-            (parentRect.y + (parentRect.height / 2 + conRect.height / 2)) <
-          0;
-      }
-      if (this.overlayPos === 'rightBot') {
-        outTop = parentRect.y + (parentRect.height - conRect.height) < 0;
-        outBot = window.innerHeight - (parentRect.y + parentRect.height) < 0;
-      }
-      isOutsideScreen = outRight || outLeft || outTop || outBot;
-    }
-
-    if (
-      this.overlayPos === 'topLeft' ||
-      this.overlayPos === 'topCenter' ||
-      this.overlayPos === 'topRight'
-    ) {
-      const outTop = parentRect.y - conRect.height < 0;
-      const outBot = window.innerHeight - parentRect.y < 0;
-      let outRight = false;
-      let outLeft = false;
-
-      if (this.overlayPos === 'topLeft') {
-        outRight = window.innerWidth - (parentRect.x + conRect.width) < 0;
-        outLeft = parentRect.x < 0;
-      }
-      if (this.overlayPos === 'topCenter') {
-        outRight =
-          window.innerWidth -
-            (parentRect.x + (parentRect.width / 2 + conRect.width / 2)) <
-          0;
-        outLeft = parentRect.x + (parentRect.width / 2 - conRect.width / 2) < 0;
-      }
-      if (this.overlayPos === 'topRight') {
-        outRight = window.innerWidth - (parentRect.x + parentRect.width) < 0;
-        outLeft = parentRect.x + parentRect.width - conRect.width < 0;
-      }
-      isOutsideScreen = outRight || outLeft || outTop || outBot;
-    }
-
-    if (
-      this.overlayPos === 'botLeft' ||
-      this.overlayPos === 'botCenter' ||
-      this.overlayPos === 'botRight'
-    ) {
-      const outTop = parentRect.y + parentRect.height < 0;
-      const outBot =
-        window.innerHeight -
-          (parentRect.y + parentRect.height + conRect.height) <
-        0;
-      let outRight = false;
-      let outLeft = false;
-
-      if (this.overlayPos === 'botLeft') {
-        outRight = window.innerWidth - (parentRect.x + conRect.width) < 0;
-        outLeft = parentRect.x < 0;
-      }
-      if (this.overlayPos === 'botCenter') {
-        outRight =
-          window.innerWidth -
-            (parentRect.x + (parentRect.width / 2 + conRect.width / 2)) <
-          0;
-        outLeft = parentRect.x + (parentRect.width / 2 - conRect.width / 2) < 0;
-      }
-      if (this.overlayPos === 'botRight') {
-        outRight = window.innerWidth - (parentRect.x + parentRect.width) < 0;
-        outLeft = parentRect.x + parentRect.width - conRect.width < 0;
-      }
-      isOutsideScreen = outRight || outLeft || outTop || outBot;
-    }
-    return isOutsideScreen;
+  mathMap(value: number, x1: number, y1: number, x2: number, y2: number) {
+    return ((value - x1) * (y2 - x2)) / (y1 - x1) + x2;
   }
 }
