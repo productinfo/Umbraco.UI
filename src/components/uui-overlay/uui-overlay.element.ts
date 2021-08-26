@@ -127,10 +127,11 @@ export class UUIOverlayElement extends LitElement {
       if (!element.isIntersecting) {
         document.addEventListener('scroll', this.scrollEventHandler);
       } else {
+        // only unsubscribe when the container has been inside the screen for x milliseconds
         clearTimeout(this.scrollTimeout);
         this.scrollTimeout = setTimeout(() => {
           document.removeEventListener('scroll', this.scrollEventHandler);
-        }, 1000);
+        }, 200);
       }
     });
   };
@@ -143,16 +144,31 @@ export class UUIOverlayElement extends LitElement {
   }
 
   updateOverlay() {
-    if (this.shadowRoot) {
-      const conRect = this.containerElement?.getBoundingClientRect()!;
-      const parentRect = this.parent!.getBoundingClientRect()!;
-      const containerElement = this.containerElement!;
-
-      this.updateOverlayPlacement(conRect, parentRect, containerElement);
+    if (!this.shadowRoot) {
+      return;
     }
+
+    const containerElement = this.containerElement!;
+
+    if (!containerElement) {
+      return;
+    }
+
+    const conRect = this.containerElement?.getBoundingClientRect()!;
+    const parentRect = this.parent!.getBoundingClientRect()!;
+
+    containerElement.style.top = '';
+    containerElement.style.bottom = '';
+    containerElement.style.left = '';
+    containerElement.style.right = '';
+
+    const result = this.calculateOverlayPlacement(conRect, parentRect);
+
+    containerElement.style.left = `${result.x}px`;
+    containerElement.style.top = `${result.y}px`;
   }
 
-  updateOverlayPos(rect: DOMRect) {
+  updateOverlayPosition(rect: DOMRect) {
     const sideSplit = this._overlayPos.split(/(?=[A-Z])/);
     const currentSide = sideSplit[0];
     const sideSuffix = sideSplit[1] || 'Center';
@@ -189,17 +205,11 @@ export class UUIOverlayElement extends LitElement {
     }
   }
 
-  updateOverlayPlacement(
+  calculateOverlayPlacement(
     conRect: DOMRect,
-    parentRect: DOMRect,
-    containerElement: HTMLElement
-  ) {
-    if (parentRect != null && conRect != null && containerElement != null) {
-      containerElement.style.top = '';
-      containerElement.style.bottom = '';
-      containerElement.style.left = '';
-      containerElement.style.right = '';
-
+    parentRect: DOMRect
+  ): { x: number; y: number } {
+    if (parentRect != null && conRect != null) {
       const isTopHorizontal = this._overlayPos.indexOf('top') !== -1;
       const isBotHorizontal = this._overlayPos.indexOf('bot') !== -1;
       const isLeftHorizontal = this._overlayPos.indexOf('Left') !== -1;
@@ -245,7 +255,7 @@ export class UUIOverlayElement extends LitElement {
         marginX = this.margin;
         marginY = this.margin;
       } else {
-        this.updateOverlayPos(conRect);
+        this.updateOverlayPosition(conRect);
         // -------- TOP / BOT --------
         if (isTopHorizontal) {
           alignY = 1;
@@ -356,10 +366,10 @@ export class UUIOverlayElement extends LitElement {
         }
       }
 
-      console.log(marginX, marginY);
-      // apply the positions as styling
-      containerElement.style.left = `${clampXFinal}px`;
-      containerElement.style.top = `${clampYFinal}px`;
+      // return the positions
+      return { x: clampXFinal, y: clampYFinal! };
+    } else {
+      return { x: 0, y: 0 };
     }
   }
 
