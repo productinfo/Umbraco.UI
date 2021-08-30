@@ -5,6 +5,7 @@ import { UUIOverflowContainer } from '../uui-overflow-container/uui-overflow-con
 import { UUISelectOptionElement } from '../uui-select-option/uui-select-option.element';
 import { UUISelectEvent } from './UUISelectEvent';
 import { UUISelectOptionEvent } from '../uui-select-option/UUISelectOptionEvent';
+import { UUIOverlayEvent } from '../uui-overlay/UUIOverlayEvent';
 /**
  *  @element uui-select
  *  @slot - for stuff
@@ -55,10 +56,12 @@ export class UUISelectElement extends LitElement {
 
       input#selected-value {
         width: 100%;
-
         font-family: inherit;
         font-size: 1rem;
         padding: var(--uui-size-small);
+        box-sizing: border-box;
+        border: none;
+        outline: none;
       }
 
       #caret {
@@ -73,9 +76,16 @@ export class UUISelectElement extends LitElement {
         background-color: transparent;
       }
 
-      #placeholder {
+      #placeholder,
+      ::placeholder {
         font-style: italic;
         color: var(--uui-interface-contrast-disabled);
+      }
+
+      #container {
+        box-sizing: border-box;
+        border-radius: var(--uui-size-border-radius);
+        box-shadow: 0 5px 20px rgb(0 0 0 / 30%);
       }
     `,
   ];
@@ -323,47 +333,52 @@ export class UUISelectElement extends LitElement {
     return this.getNextEnabledElement(originalIndex, nextIndex, move);
   }
 
+  renderInput() {
+    return html`
+      <input
+        slot="parent"
+        id="selected-value"
+        type="text"
+        placeholder="${this.placeholder}"
+        @focus=${this.onInputFocus}
+        @input=${this.onInputInput}
+        aria-label="${this.label}"
+      />
+    `;
+  }
+
+  renderButton() {
+    return html`
+      <button
+        slot="parent"
+        id="selected-value"
+        type="button"
+        @click="${() => {
+          this.open = !this.open;
+        }}"
+        aria-label="${this.label}"
+      >
+        ${this.selectedElement
+          ? html`<span>${this.selectedElement.label}</span>`
+          : html`<span id="placeholder">${this.placeholder}</span>`}
+        <uui-caret id="caret" ?open=${this._open}></uui-caret>
+      </button>
+    `;
+  }
+
   render() {
     return html`
-      <uui-dropdown
-        .open=${this.open}
-        same-width
-        position="bottom"
-        .title="${this.title}"
-        tabindex="0"
-        role="combobox"
-        aria-controls="list"
-        @close=${this.onDropdownClose}
+      <uui-overlay
+        .open=${this._open}
+        .parent=${this.selectedValueElement}
+        .margin=${10}
+        @change=${(e: UUIOverlayEvent) => (this.open = e.target.open)}
+        overlayPos="botRight"
       >
-        ${this.input
-          ? html`
-            <input
-              id="input-field"
-              type="text"
-              @focus=${this.onInputFocus}
-              @input=${this.onInputInput}
-              aria-label="${this.label}"
-            ></input>
-          `
-          : html`
-              <button
-                id="selected-value"
-                type="button"
-                @click="${() => {
-                  console.log('click');
-                  this.open = !this.open;
-                }}"
-                aria-label="${this.label}"
-              >
-                ${this.selectedElement
-                  ? html`<span>${this.selectedElement.label}</span>`
-                  : html`<span id="placeholder">${this.placeholder}</span>`}
-                <uui-caret id="caret" ?open=${this._open}></uui-caret>
-              </button>
-            `}
-
+        ${this.input ? this.renderInput() : this.renderButton()}
         <uui-overflow-container
-          slot="dropdown"
+          slot="overlay"
+          id="container"
           role="listbox"
           tabindex="${this.open ? '0' : '-1'}"
           aria-activedescendant="TODO"
@@ -371,7 +386,7 @@ export class UUISelectElement extends LitElement {
         >
           <slot @slotchange=${this.onSlotChange}></slot>
         </uui-overflow-container>
-      </uui-dropdown>
+      </uui-overlay>
     `;
   }
 }

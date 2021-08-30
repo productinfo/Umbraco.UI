@@ -50,7 +50,7 @@ export const Overview = () => html`
 `;
 
 export const WithInput = () => html`
-  <uui-select input>
+  <uui-select input label="Choose the color" placeholder="Choose the color">
     ${options.map(
       option =>
         html`<uui-select-option value="${option.color}" label="${option.color}">
