@@ -62,8 +62,11 @@ export default function addFallbackValues(options = {}) {
     async transform(code) {
       const ast = this.parse(code);
 
+      //add filter   https://github.com/rollup/plugins/tree/master/packages/pluginutils#createfilter
+
       walk(ast, {
         enter(node, parent, prop, index) {
+          //TODO refactor so it starts at the property definition with identifieer styles
           if (
             node.type === 'TaggedTemplateExpression' &&
             parent.type === 'ArrayExpression'
@@ -75,11 +78,21 @@ export default function addFallbackValues(options = {}) {
                 postcssCustomPropertiesFallback({ importFrom: properties }),
               ])
                 .process(cssString)
-                .then(result => console.log(result.css));
+                .then(result => {
+                  node.quasi.quasis[0].value.raw = result.css;
+                  node.quasi.quasis[0].value.cooked = result.css;
+                  console.log("MY NEW NODE",node.quasi.quasis[0].value.raw)
+                  
+                });
             }
           }
         },
       });
+
+      // return {
+      //   code: ast,
+
+      // };
     },
   };
 }

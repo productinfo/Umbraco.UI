@@ -9,7 +9,7 @@ export class UUILoaderElement extends LitElement {
     css`
       div {
         display: inline-block;
-        width: var(--uui-size-base-unit);
+        width: var(--uui-size-base-unit, 4px);
         height: var(--uui-size-base-unit);
         border: 2px solid currentColor;
         border-radius: 100%;

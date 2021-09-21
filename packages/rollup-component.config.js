@@ -17,7 +17,7 @@ export const UUIProdConfig = ({
           file: `./dist/${name}.mjs`,
           format: 'es',
         },
-        plugins: [addFallbackValues(), typescript2({ clean: true }), esbuild()],
+        plugins: [ typescript2({ clean: true }), esbuild(), addFallbackValues(),],
       };
     }),
     ...bundles.map(name => {
