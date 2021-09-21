@@ -28,7 +28,7 @@ export const UUIProdConfig = ({
           format: 'umd',
           sourcemap: true,
         },
-        plugins: [esbuild()],
+        plugins: [ esbuild()],
       };
     }),
     /*
