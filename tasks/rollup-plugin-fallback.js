@@ -62,12 +62,19 @@ export default function addFallbackValues(options = {}) {
     },
     async transform(code) {
     
-      const program = ts.createProgram([code], {});
-      console.log(program);
-      // return {
-      //   code: 'code',
+      const file = ts.createSourceFile('myTempFile', code)
+      //const program = ts.createProgram([file], {});
 
-      // };
+      const printer = ts.createPrinter();
+
+
+
+     
+      console.log(file);
+      return {
+        code: printer.printFile(file),
+
+      };
     },
   };
 }
