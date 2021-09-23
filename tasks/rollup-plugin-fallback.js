@@ -8,8 +8,9 @@ import * as postCssValueParser from 'postcss-values-parser';
 
 import postcssCustomProperties from 'postcss-custom-properties';
 import postcssCustomPropertiesFallback from 'postcss-custom-properties-fallback';
-// import{ plugin as postCssAdvancedVariables} from 'postcss-advanced-variables'
-// import * as colorFuncvions from 'postcss-color-function'
+import ts from 'typescript'
+
+
 
 export default function addFallbackValues(options = {}) {
   const { hook = 'buildEnd' } = options;
@@ -60,39 +61,44 @@ export default function addFallbackValues(options = {}) {
       properties = await extractCustomProperties();
     },
     async transform(code) {
-      const ast = this.parse(code);
-
-      //add filter   https://github.com/rollup/plugins/tree/master/packages/pluginutils#createfilter
-
-      walk(ast, {
-        enter(node, parent, prop, index) {
-          //TODO refactor so it starts at the property definition with identifieer styles
-          if (
-            node.type === 'TaggedTemplateExpression' &&
-            parent.type === 'ArrayExpression'
-          ) {
-            if (node.tag.name === 'css') {
-              let cssString = node.quasi.quasis[0].value.raw;
-
-              postcss([
-                postcssCustomPropertiesFallback({ importFrom: properties }),
-              ])
-                .process(cssString)
-                .then(result => {
-                  node.quasi.quasis[0].value.raw = result.css;
-                  node.quasi.quasis[0].value.cooked = result.css;
-                  console.log("MY NEW NODE",node.quasi.quasis[0].value.raw)
-                  
-                });
-            }
-          }
-        },
-      });
-
+    
+      const program = ts.createProgram([code], {});
+      console.log(program);
       // return {
-      //   code: ast,
+      //   code: 'code',
 
       // };
     },
   };
 }
+
+
+  //const ast = this.parse(code);
+      
+      //add filter   https://github.com/rollup/plugins/tree/master/packages/pluginutils#createfilter
+
+      // walk(ast, {
+      //   enter(node, parent, prop, index) {
+      //     //TODO refactor so it starts at the property definition with identifieer styles
+      //     if (
+      //       node.type === 'TaggedTemplateExpression' &&
+      //       parent.type === 'ArrayExpression'
+      //     ) {
+      //       if (node.tag.name === 'css') {
+      //         let cssString = node.quasi.quasis[0].value.raw;
+
+
+      //         postcss([
+      //           postcssCustomPropertiesFallback({ importFrom: properties }),
+      //         ])
+      //           .process(cssString)
+      //           .then(result => {
+      //             node.quasi.quasis[0].value.raw = result.css;
+      //             node.quasi.quasis[0].value.cooked = result.css;
+      //             console.log("MY NEW NODE",node.quasi.quasis[0].value.raw)
+                  
+      //           });
+      //       }
+      //     }
+      //   },
+      // });

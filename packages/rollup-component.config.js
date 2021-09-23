@@ -17,20 +17,10 @@ export const UUIProdConfig = ({
           file: `./dist/${name}.mjs`,
           format: 'es',
         },
-        plugins: [ typescript2({ clean: true }), esbuild(), addFallbackValues(),],
+        plugins: [addFallbackValues() ],
       };
     }),
-    ...bundles.map(name => {
-      return {
-        input: `src/${name}.ts`,
-        output: {
-          dir: './dist',
-          format: 'umd',
-          sourcemap: true,
-        },
-        plugins: [ esbuild()],
-      };
-    }),
+ 
     /*
     ...bundles.map(name => {
       return {
@@ -45,3 +35,16 @@ export const UUIProdConfig = ({
     */
   ];
 };
+
+
+// ...bundles.map(name => {
+//   return {
+//     input: `src/${name}.ts`,
+//     output: {
+//       dir: './dist',
+//       format: 'umd',
+//       sourcemap: true,
+//     },
+//     plugins: [ esbuild()],
+//   };
+// }),
