@@ -67,27 +67,25 @@ export default function addFallbackValues(options = {}) {
 
       const addFallbackValuesTransformer = context => {
 
+        //Walk each TS node
         const visitor = node => {
           node = ts.visitEachChild(node, visitor, context);
           
 
           if (ts.isNoSubstitutionTemplateLiteral(node)&& ts.isTaggedTemplateExpression(node.parent) && node.parent.tag.escapedText === 'css') {
             const cssString = node.text;
-            //console.log(node);
             let nodemaker = context.factory.createNoSubstitutionTemplateLiteral;
 
-            //const result = await postcss([postcssCustomPropertiesFallback({ importFrom: properties })]).process(cssString);
-            // result.then(result =>{
-            //   console.log(nodemaker(result.toString()))
-            //   return nodemaker(result.toString());
-            // });
+  
 
             const result = postcss.parse(cssString);
 
+                //Walk CSS nodes
                 result.walkDecls(cssNode => {
 
                   let values = valueParser(cssNode.value);
 
+                  //Walk parsed Values of each CSS node
                   values.walk(value => {
 
                     if (value.type !== 'function' || value.nodes.length !== 1) {
@@ -96,7 +94,6 @@ export default function addFallbackValues(options = {}) {
 
                     if(value.type === 'function' && value.value === 'var') {
                       const fallback = properties.customProperties[value.nodes[0].value];
-                      //console.log(value, value.nodes[0].value, properties.customProperties.hasOwnProperty(value.nodes[0].value))
                       if (fallback) {
                         value.nodes.push(
                           { type: 'divider', value: ',' },
@@ -110,8 +107,6 @@ export default function addFallbackValues(options = {}) {
                   cssNode.value = values.toString();
 
                 });
-
-                //console.log(result.toResult().toString());
 
                 return nodemaker(result.toResult().toString(), result.toResult().toString());
 
@@ -127,17 +122,6 @@ export default function addFallbackValues(options = {}) {
 
      
       const result = ts.transform(fileAST, [addFallbackValuesTransformer]);
-      const ddd = result.transformed[0];
-      // console.log(`
-      
-      // DDD
-      
-      // `, ddd, `
-      
-      // DDD end
-      
-      
-      // `)
      
       return {
         code: printer.printFile(result.transformed[0]),
