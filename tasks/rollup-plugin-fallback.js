@@ -61,26 +61,42 @@ export default function addFallbackValues(options = {}) {
       properties = await extractCustomProperties();
     },
     async transform(code) {
-    
-      const file = ts.createSourceFile('myTempFile', code)
-      //const program = ts.createProgram([file], {});
 
+      const fileAST = ts.createSourceFile(path.resolve('./src/uui-loader.element.ts'), code, undefined, true);
       const printer = ts.createPrinter();
 
+      const addFallbackValuesTransformer = context => {
 
+        const visitor = node => {
+          node = ts.visitEachChild(node, visitor, context);
+          
+
+          if (ts.isNoSubstitutionTemplateLiteral(node)&& ts.isTaggedTemplateExpression(node.parent) && node.parent.tag.escapedText === 'css') {
+            console.log(node);
+            
+            node.text = 'I changed your code and now it will not work'
+            node.rawText = 'I changed your code and now it will not work'
+          
+          }
+      
+          return node;
+        };
+      
+        return node => ts.visitNode(node, visitor);
+      };
 
      
-      console.log(file);
+      const result = ts.transform(fileAST, [addFallbackValuesTransformer]);
+
+     
       return {
-        code: printer.printFile(file),
+        code: printer.printFile(result.transformed[0]),
 
       };
     },
   };
 }
 
-
-  //const ast = this.parse(code);
       
       //add filter   https://github.com/rollup/plugins/tree/master/packages/pluginutils#createfilter
 
