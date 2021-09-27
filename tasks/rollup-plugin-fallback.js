@@ -9,7 +9,7 @@ import * as postCssValueParser from 'postcss-values-parser';
 import postcssCustomProperties from 'postcss-custom-properties';
 import postcssCustomPropertiesFallback from 'postcss-custom-properties-fallback';
 import ts from 'typescript'
-
+import valueParser from 'postcss-value-parser';
 
 
 export default function addFallbackValues(options = {}) {
@@ -72,22 +72,72 @@ export default function addFallbackValues(options = {}) {
           
 
           if (ts.isNoSubstitutionTemplateLiteral(node)&& ts.isTaggedTemplateExpression(node.parent) && node.parent.tag.escapedText === 'css') {
-            console.log(node);
-            
-            node.text = 'I changed your code and now it will not work'
-            node.rawText = 'I changed your code and now it will not work'
-          
+            const cssString = node.text;
+            //console.log(node);
+            let nodemaker = context.factory.createNoSubstitutionTemplateLiteral;
+
+            //const result = await postcss([postcssCustomPropertiesFallback({ importFrom: properties })]).process(cssString);
+            // result.then(result =>{
+            //   console.log(nodemaker(result.toString()))
+            //   return nodemaker(result.toString());
+            // });
+
+            const result = postcss.parse(cssString);
+
+                result.walkDecls(cssNode => {
+
+                  let values = valueParser(cssNode.value);
+
+                  values.walk(value => {
+
+                    if (value.type !== 'function' || value.nodes.length !== 1) {
+                      return;
+                    }
+
+                    if(value.type === 'function' && value.value === 'var') {
+                      const fallback = properties.customProperties[value.nodes[0].value];
+                      //console.log(value, value.nodes[0].value, properties.customProperties.hasOwnProperty(value.nodes[0].value))
+                      if (fallback) {
+                        value.nodes.push(
+                          { type: 'divider', value: ',' },
+                          { type: 'word', value: fallback }
+                        );
+                      }
+                    }
+                  })
+
+                  console.log(values.toString())
+                  cssNode.value = values.toString();
+
+                });
+
+                //console.log(result.toResult().toString());
+
+                return nodemaker(result.toResult().toString(), result.toResult().toString());
+
+             
           }
       
           return node;
         };
       
+
         return node => ts.visitNode(node, visitor);
       };
 
      
       const result = ts.transform(fileAST, [addFallbackValuesTransformer]);
-
+      const ddd = result.transformed[0];
+      // console.log(`
+      
+      // DDD
+      
+      // `, ddd, `
+      
+      // DDD end
+      
+      
+      // `)
      
       return {
         code: printer.printFile(result.transformed[0]),
