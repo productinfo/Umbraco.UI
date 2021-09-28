@@ -74,7 +74,7 @@ export default function addFallbackValues(options = {}) {
 
           if (ts.isNoSubstitutionTemplateLiteral(node)&& ts.isTaggedTemplateExpression(node.parent) && node.parent.tag.escapedText === 'css') {
             const cssString = node.text;
-            let nodemaker = context.factory.createNoSubstitutionTemplateLiteral;
+            const nodemaker = context.factory.createNoSubstitutionTemplateLiteral;
 
   
 
