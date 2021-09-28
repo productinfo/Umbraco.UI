@@ -33,7 +33,9 @@
     "test": "tsc && web-test-runner --coverage",
     "test:watch": "web-test-runner --watch",
     "bootstrap": "lerna bootstrap --ci",
-    "build": "lerna run build"
+    "build": "lerna run build",
+    "pack": "npm run build && npm run prepack && lerna exec -- cd ./out npm pack",
+    "prepack": "node ./scripts/prepack.js"
   },
   "engines": {
     "node": ">=16.8.0",

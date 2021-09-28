@@ -17,7 +17,7 @@
 
 # build
 /_site/
-**/dist/
+/packages/**/out/
 /out-tsc/
 
 
